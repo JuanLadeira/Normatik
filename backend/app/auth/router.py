@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import Depends
 
 from app.auth.dependencies import CurrentUser
 from app.core.rate_limit import limiter

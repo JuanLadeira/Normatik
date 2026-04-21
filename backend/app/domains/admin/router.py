@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import Depends
 
 from app.auth.dependencies import CurrentAdmin
-from app.auth.totp import gerar_secret, gerar_qr_uri, verificar_codigo
+from app.auth.totp import gerar_qr_uri, gerar_secret, verificar_codigo
 from app.core.rate_limit import limiter
 from app.core.security import (
     create_admin_access_token,

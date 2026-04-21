@@ -17,19 +17,19 @@ import asyncio, sys
 sys.path.insert(0, '/app/src')
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
-from docagent.database import Base
-from docagent.tenant.models import Tenant
-from docagent.usuario.models import Usuario, UsuarioRole
-from docagent.telegram.models import TelegramInstancia  # noqa
-from docagent.whatsapp.models import WhatsappInstancia  # noqa
-from docagent.atendimento.models import Atendimento, MensagemAtendimento, Contato  # noqa
-from docagent.mcp_server.models import McpServer, McpTool  # noqa
-from docagent.agente.models import Agente, Documento  # noqa
-from docagent.admin.models import Admin  # noqa
-from docagent.system_config.models import SystemConfig  # noqa
-from docagent.agente.defaults import AGENTES_PADRAO
-from docagent.auth.security import get_password_hash
-from docagent.settings import Settings
+from app.database import Base
+from app.tenant.models import Tenant
+from app.usuario.models import Usuario, UsuarioRole
+from app.telegram.models import TelegramInstancia  # noqa
+from app.whatsapp.models import WhatsappInstancia  # noqa
+from app.atendimento.models import Atendimento, MensagemAtendimento, Contato  # noqa
+from app.mcp_server.models import McpServer, McpTool  # noqa
+from app.agente.models import Agente, Documento  # noqa
+from app.admin.models import Admin  # noqa
+from app.system_config.models import SystemConfig  # noqa
+from app.agente.defaults import AGENTES_PADRAO
+from app.auth.security import get_password_hash
+from app.settings import Settings
 
 settings = Settings()
 username = settings.ADMIN_DEFAULT_USERNAME
@@ -52,7 +52,7 @@ async def main():
 
                 user = Usuario(
                     username=username,
-                    email=f'{username}@docagent.com',
+                    email=f'{username}@app.com',
                     password=get_password_hash(password),
                     nome='Administrador',
                     ativo=True,
@@ -73,7 +73,7 @@ async def main():
             else:
                 admin = Admin(
                     username=username,
-                    email=username + '@docagent.com',
+                    email=username + '@app.com',
                     password=get_password_hash(password),
                     nome='Administrador',
                     ativo=True,

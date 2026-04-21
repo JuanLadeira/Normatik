@@ -1,6 +1,8 @@
+import os
 from zoneinfo import ZoneInfo
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 

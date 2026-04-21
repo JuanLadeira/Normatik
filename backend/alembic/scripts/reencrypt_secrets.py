@@ -16,8 +16,8 @@ import logging
 import os
 import sys
 
-# Garante que o pacote docagent esteja no path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
+# Garante que o pacote app esteja no path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../"))
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -27,9 +27,10 @@ _log = logging.getLogger(__name__)
 
 
 async def reencrypt():
-    from docagent.crypto import encrypt, is_encrypted
+    from app.core.crypto import encrypt, is_encrypted
+    from app.core.settings import settings
 
-    db_url = os.getenv("DOCAGENT_DB_URL", "sqlite+aiosqlite:///./docagent.db")
+    db_url = settings.DATABASE_URL
     engine = create_async_engine(db_url)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from app.domains.users.model import User
 
 
-class TenantStatus(str, enum.Enum):
+class TenantStatus(enum.StrEnum):
     trial = "trial"
     active = "active"
     inactive = "inactive"

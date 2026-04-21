@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from jwt import decode, encode, DecodeError, ExpiredSignatureError
 from pwdlib import PasswordHash
@@ -18,7 +18,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(user_id: int, tenant_id: int, role: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     return encode(
@@ -29,7 +29,7 @@ def create_access_token(user_id: int, tenant_id: int, role: str) -> str:
 
 
 def create_refresh_token(user_id: int) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         days=settings.REFRESH_TOKEN_EXPIRE_DAYS
     )
     return encode(
@@ -40,7 +40,7 @@ def create_refresh_token(user_id: int) -> str:
 
 
 def create_admin_access_token(admin_id: int, username: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     return encode(
@@ -51,7 +51,7 @@ def create_admin_access_token(admin_id: int, username: str) -> str:
 
 
 def create_temp_2fa_token(admin_id: int) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    expire = datetime.now(UTC) + timedelta(minutes=5)
     return encode(
         {"sub": f"temp_2fa:{admin_id}", "type": "temp_2fa", "exp": expire},
         settings.SECRET_KEY,
@@ -60,7 +60,7 @@ def create_temp_2fa_token(admin_id: int) -> str:
 
 
 def create_invite_token(email: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=48)
+    expire = datetime.now(UTC) + timedelta(hours=48)
     return encode(
         {"sub": email, "type": "invite", "exp": expire},
         settings.SECRET_KEY,
@@ -69,7 +69,7 @@ def create_invite_token(email: str) -> str:
 
 
 def create_password_reset_token(email: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=1)
+    expire = datetime.now(UTC) + timedelta(hours=1)
     return encode(
         {"sub": email, "type": "password_reset", "exp": expire},
         settings.SECRET_KEY,

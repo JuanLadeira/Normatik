@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from app.domains.tenants.model import Tenant
 
 
-class UserRole(str, enum.Enum):
+class UserRole(enum.StrEnum):
     admin = "admin"
     technician = "technician"
     attendant = "attendant"

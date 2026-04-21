@@ -18,9 +18,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(user_id: int, tenant_id: int, role: str) -> str:
-    expire = datetime.now(UTC) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return encode(
         {"sub": str(user_id), "tenant_id": tenant_id, "role": role, "exp": expire},
         settings.SECRET_KEY,
@@ -29,9 +27,7 @@ def create_access_token(user_id: int, tenant_id: int, role: str) -> str:
 
 
 def create_refresh_token(user_id: int) -> str:
-    expire = datetime.now(UTC) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
+    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     return encode(
         {"sub": str(user_id), "type": "refresh", "exp": expire},
         settings.SECRET_KEY,
@@ -40,9 +36,7 @@ def create_refresh_token(user_id: int) -> str:
 
 
 def create_admin_access_token(admin_id: int, username: str) -> str:
-    expire = datetime.now(UTC) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return encode(
         {"sub": f"admin:{username}", "admin_id": admin_id, "exp": expire},
         settings.SECRET_KEY,

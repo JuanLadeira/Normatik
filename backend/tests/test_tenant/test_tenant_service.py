@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from app.domains.tenants.model import Tenant, TenantStatus
 from app.domains.tenants.repository import TenantRepository
@@ -46,12 +46,12 @@ async def test_tenant_is_active_logic():
     assert t2.is_active is False
 
     # Trial válido
-    future = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=1)
+    future = datetime.now(UTC).replace(tzinfo=None) + timedelta(days=1)
     t3 = Tenant(status=TenantStatus.trial, trial_expires_at=future)
     assert t3.is_active is True
 
     # Trial expirado
-    past = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1)
+    past = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=1)
     t4 = Tenant(status=TenantStatus.trial, trial_expires_at=past)
     assert t4.is_active is False
 

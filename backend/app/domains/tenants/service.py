@@ -1,6 +1,6 @@
 import re
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import Depends
@@ -38,7 +38,7 @@ class TenantService:
 
     async def create(self, data: TenantCreate) -> Tenant:
         slug = await self._unique_slug(data.nome)
-        trial_expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
+        trial_expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(
             days=data.trial_days or settings.DEFAULT_TRIAL_DAYS
         )
         tenant = Tenant(
@@ -79,7 +79,7 @@ class TenantService:
         tenant = await self.repo.get_by_id(tenant_id)
         if not tenant:
             return None
-        now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+        now_naive = datetime.now(UTC).replace(tzinfo=None)
         base = max(
             tenant.trial_expires_at or now_naive,
             now_naive,

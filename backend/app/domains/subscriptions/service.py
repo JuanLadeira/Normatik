@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import Depends
@@ -25,7 +25,7 @@ class SubscriptionService:
 
     async def create_or_update(self, tenant_id: int, plan: Plan) -> Subscription:
         sub = await self.repo.get_by_tenant(tenant_id)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if sub:
             sub.plan_id = plan.id
             sub.status = SubscriptionStatus.active

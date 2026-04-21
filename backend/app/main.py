@@ -6,9 +6,15 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.core.rate_limit import limiter
+from app.auth.router import router as auth_router
 from app.core.logging import logger
+from app.core.rate_limit import limiter
 from app.core.settings import settings
+from app.domains.admin.router import router as admin_router
+from app.domains.plans.router import router as plans_router
+from app.domains.subscriptions.router import router as subscriptions_router
+from app.domains.tenants.router import router as tenants_router
+from app.domains.users.router import router as users_router
 
 # Importa todos os models para que o Base.metadata os conheça
 import app.domains.plans.model  # noqa: F401
@@ -16,13 +22,6 @@ import app.domains.tenants.model  # noqa: F401
 import app.domains.users.model  # noqa: F401
 import app.domains.subscriptions.model  # noqa: F401
 import app.domains.admin.model  # noqa: F401
-
-from app.auth.router import router as auth_router
-from app.domains.admin.router import router as admin_router
-from app.domains.plans.router import router as plans_router
-from app.domains.tenants.router import router as tenants_router
-from app.domains.users.router import router as users_router
-from app.domains.subscriptions.router import router as subscriptions_router
 
 
 @asynccontextmanager

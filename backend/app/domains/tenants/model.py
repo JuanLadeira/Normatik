@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String
@@ -51,7 +51,5 @@ class Tenant(Base):
         if self.status == TenantStatus.trial:
             if self.trial_expires_at is None:
                 return True
-            return (
-                datetime.now(timezone.utc).replace(tzinfo=None) < self.trial_expires_at
-            )
+            return datetime.now(UTC).replace(tzinfo=None) < self.trial_expires_at
         return False

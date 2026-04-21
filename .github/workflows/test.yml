@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, feature/* ]
   pull_request:
     branches: [ main, master, develop ]
 
@@ -59,15 +59,19 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --dev --project backend
+        working-directory: backend
+        run: uv sync --dev --frozen
 
       - name: Lint with Ruff
+        working-directory: backend
         run: |
-          uv run --project backend ruff check .
-          uv run --project backend ruff format --check .
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Run migrations
-        run: uv run --project backend alembic upgrade head
+        working-directory: backend
+        run: uv run alembic upgrade head
 
       - name: Run tests
-        run: uv run --project backend pytest
+        working-directory: backend
+        run: uv run pytest

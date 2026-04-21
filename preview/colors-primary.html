@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #fff; padding: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .swatch { height: 52px; position: relative; }
+  .swatch:hover .label { opacity: 1; }
+  .label { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 9px; font-weight: 500; opacity: 0; transition: opacity 0.15s; background: rgba(0,0,0,0.5); color: #fff; padding: 2px; }
+  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .name { font-size: 11px; font-weight: 600; color: #334155; width: 80px; flex-shrink: 0; }
+  .hex { font-size: 10px; color: #64748B; font-family: monospace; }
+  .dot { width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.06); }
+  .section-label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="section-label">Primary — Cobalt Blue</div>
+<div class="grid">
+  <div class="swatch" style="background:#EEF3FB"><div class="label">50</div></div>
+  <div class="swatch" style="background:#D4E1F5"><div class="label">100</div></div>
+  <div class="swatch" style="background:#A9C3EB"><div class="label">200</div></div>
+  <div class="swatch" style="background:#7EA5E1"><div class="label">300</div></div>
+  <div class="swatch" style="background:#5387D7"><div class="label">400</div></div>
+  <div class="swatch" style="background:#2A6AC8"><div class="label">500</div></div>
+  <div class="swatch" style="background:#1A3A6C"><div class="label">600</div></div>
+  <div class="swatch" style="background:#152E56"><div class="label">700</div></div>
+  <div class="swatch" style="background:#102240"><div class="label">800</div></div>
+  <div class="swatch" style="background:#0A162A"><div class="label">900</div></div>
+</div>
+
+<div class="section-label">Accent — Teal</div>
+<div class="grid">
+  <div class="swatch" style="background:#E6FAFA"><div class="label">50</div></div>
+  <div class="swatch" style="background:#B3F0EE"><div class="label">100</div></div>
+  <div class="swatch" style="background:#66E0DC"><div class="label">200</div></div>
+  <div class="swatch" style="background:#19D1CA"><div class="label">300</div></div>
+  <div class="swatch" style="background:#00C2BA"><div class="label">400</div></div>
+  <div class="swatch" style="background:#00B5A4"><div class="label">500</div></div>
+  <div class="swatch" style="background:#008F82"><div class="label">600</div></div>
+  <div class="swatch" style="background:#006960"><div class="label">700</div></div>
+  <div class="swatch" style="background:#00433D"><div class="label">800</div></div>
+  <div class="swatch" style="background:#001D1A"><div class="label">900</div></div>
+</div>
+
+<div style="display:flex;gap:24px;margin-top:8px">
+  <div>
+    <div class="section-label">Key Tokens</div>
+    <div class="row"><div class="dot" style="background:#1A3A6C"></div><div><div class="name">primary-600</div><div class="hex">#1A3A6C</div></div></div>
+    <div class="row"><div class="dot" style="background:#00B5A4"></div><div><div class="name">accent-500</div><div class="hex">#00B5A4</div></div></div>
+    <div class="row"><div class="dot" style="background:#2A6AC8"></div><div><div class="name">primary-500</div><div class="hex">#2A6AC8</div></div></div>
+  </div>
+  <div>
+    <div class="section-label">On Dark</div>
+    <div style="background:#1A3A6C;padding:14px 16px;border-radius:8px;display:flex;gap:10px;align-items:center">
+      <div style="width:24px;height:24px;background:#00B5A4;border-radius:4px"></div>
+      <div style="color:#fff;font-size:12px;font-weight:500">Accent on Primary</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

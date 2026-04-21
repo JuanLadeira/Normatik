@@ -4,6 +4,7 @@ Testes dos endpoints de tenant após correção de segurança.
 Os endpoints públicos de CRUD (/api/tenants/, /api/tenants/{id}) foram removidos.
 O CRUD agora está em /api/admin/tenants/* com autenticação de admin.
 """
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient

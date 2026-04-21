@@ -59,22 +59,15 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: |
-          cd backend
-          uv sync --dev
+        run: uv sync --dev --project backend
 
       - name: Lint with Ruff
         run: |
-          cd backend
-          uv run ruff check .
-          uv run ruff format --check .
+          uv run --project backend ruff check .
+          uv run --project backend ruff format --check .
 
       - name: Run migrations
-        run: |
-          cd backend
-          uv run alembic upgrade head
+        run: uv run --project backend alembic upgrade head
 
       - name: Run tests
-        run: |
-          cd backend
-          uv run pytest
+        run: uv run --project backend pytest

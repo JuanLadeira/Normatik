@@ -1,4 +1,3 @@
-import os
 from zoneinfo import ZoneInfo
 
 from pydantic import Field

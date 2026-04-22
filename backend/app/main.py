@@ -61,4 +61,6 @@ app.include_router(subscriptions_router)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
 # Ruff trigger

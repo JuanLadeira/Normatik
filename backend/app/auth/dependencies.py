@@ -89,7 +89,7 @@ async def get_current_admin(
     if not payload:
         raise credentials_exc
 
-    admin_id = payload.get("admin_id")
+    admin_id = payload.get("sub")
     if not admin_id:
         raise credentials_exc
 

@@ -39,7 +39,7 @@ class UserService:
             role=data.role,
             is_active=False,
             invite_token=token,
-            invite_expires_at=datetime.now(UTC) + timedelta(hours=48),
+            invite_expires_at=datetime.now(UTC).replace(tzinfo=None) + timedelta(hours=48),
         )
         return await self.repo.save(user)
 
@@ -51,7 +51,7 @@ class UserService:
         user = await self.repo.get_by_invite_token(token)
         if not user:
             return None
-        if user.invite_expires_at and datetime.now(UTC) > user.invite_expires_at:
+        if user.invite_expires_at and datetime.now(UTC).replace(tzinfo=None) > user.invite_expires_at:
             return None
         user.password = get_password_hash(password)
         user.is_active = True

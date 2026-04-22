@@ -68,7 +68,8 @@ services:
   # ── Celery Flower (dashboard) ─────────────────────────────────────────────────
   celery-flower:
     image: mher/flower:2.0
-    command: celery flower --broker=${REDIS_URL:-redis://redis:6379/0} --port=5555
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
     ports:
       - "5555:5555"
     depends_on:

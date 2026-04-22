@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #fff; padding: 20px; color: #0F172A; }
+  .label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .divider { height: 1px; background: #E2E8F0; margin: 12px 0; }
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 12px; font-weight: 500; color: #334155; margin-bottom: 4px; display: block; }
+  .field-hint { font-size: 11px; color: #64748B; margin-top: 3px; }
+  .field-error { font-size: 11px; color: #DC2626; margin-top: 3px; }
+  input, select { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; color: #0F172A; background: #fff; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 12px; height: 40px; width: 100%; outline: none; transition: border-color 150ms; }
+  input:focus, select:focus { border-color: #2A6AC8; box-shadow: 0 0 0 3px rgba(42,106,200,0.15); }
+  input.error { border-color: #DC2626; }
+  input.error:focus { box-shadow: 0 0 0 3px rgba(220,38,38,0.15); }
+  input::placeholder { color: #94A3B8; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .search-wrap { position: relative; }
+  .search-wrap input { padding-left: 36px; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="label">Text Inputs</div>
+<div class="row2">
+  <div class="field">
+    <label class="field-label">Número de série</label>
+    <input type="text" placeholder="Ex: MIC-001-2024">
+    <div class="field-hint">Identificador único do instrumento</div>
+  </div>
+  <div class="field">
+    <label class="field-label">Data de vencimento</label>
+    <input type="date" value="2025-06-30">
+  </div>
+</div>
+
+<div class="row2">
+  <div class="field">
+    <label class="field-label">Certificado externo <span style="color:#DC2626">*</span></label>
+    <input type="text" class="error" value="CERT-2024">
+    <div class="field-error">Número de certificado inválido</div>
+  </div>
+  <div class="field">
+    <label class="field-label">Incerteza expandida U</label>
+    <input type="text" placeholder="0,0024 mm" style="font-family:'IBM Plex Mono',monospace">
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="label">Select & Search</div>
+<div class="row2">
+  <div class="field">
+    <label class="field-label">Padrão de referência</label>
+    <select>
+      <option>PAT-001 — Micrômetro padrão</option>
+      <option>PAT-002 — Bloco padrão</option>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label">Buscar cliente</label>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" placeholder="Nome, CNPJ ou e-mail...">
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

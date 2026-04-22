@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #fff; padding: 20px; color: #0F172A; }
+  .label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .divider { height: 1px; background: #E2E8F0; margin: 14px 0; }
+  .radius-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .radius-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .radius-box { width: 52px; height: 52px; background: #1A3A6C; }
+  .r-label { font-size: 10px; font-weight: 600; color: #334155; }
+  .r-val { font-size: 9px; font-family: monospace; color: #94A3B8; }
+  .shadow-col { display: flex; flex-direction: column; gap: 10px; }
+  .shadow-card { background: #fff; border-radius: 8px; padding: 12px 16px; }
+  .shadow-name { font-size: 11px; font-weight: 600; color: #334155; }
+  .shadow-val { font-size: 9px; font-family: monospace; color: #94A3B8; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="label">Border Radius</div>
+<div class="radius-row">
+  <div class="radius-item"><div class="radius-box" style="border-radius:4px"></div><div class="r-label">radius-sm</div><div class="r-val">4px</div></div>
+  <div class="radius-item"><div class="radius-box" style="border-radius:6px"></div><div class="r-label">radius-md</div><div class="r-val">6px · buttons</div></div>
+  <div class="radius-item"><div class="radius-box" style="border-radius:8px"></div><div class="r-label">radius-lg</div><div class="r-val">8px · cards</div></div>
+  <div class="radius-item"><div class="radius-box" style="border-radius:12px"></div><div class="r-label">radius-xl</div><div class="r-val">12px</div></div>
+  <div class="radius-item"><div class="radius-box" style="border-radius:16px"></div><div class="r-label">radius-2xl</div><div class="r-val">16px · modals</div></div>
+  <div class="radius-item"><div class="radius-box" style="border-radius:9999px;width:52px;height:28px;margin-bottom:12px"></div><div class="r-label">radius-full</div><div class="r-val">9999px · pills</div></div>
+</div>
+
+<div class="divider"></div>
+
+<div class="label">Elevation / Shadow</div>
+<div style="background:#F1F4F8;padding:16px;border-radius:8px;display:flex;gap:16px;flex-wrap:wrap">
+  <div class="shadow-card" style="box-shadow:0 1px 2px rgba(0,0,0,0.05)">
+    <div class="shadow-name">shadow-xs</div>
+    <div class="shadow-val">0 1px 2px rgba(0,0,0,0.05)</div>
+  </div>
+  <div class="shadow-card" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04)">
+    <div class="shadow-name">shadow-sm</div>
+    <div class="shadow-val">default card shadow</div>
+  </div>
+  <div class="shadow-card" style="box-shadow:0 4px 6px rgba(0,0,0,0.07),0 2px 4px rgba(0,0,0,0.04)">
+    <div class="shadow-name">shadow-md</div>
+    <div class="shadow-val">dropdowns, popovers</div>
+  </div>
+  <div class="shadow-card" style="box-shadow:0 10px 15px rgba(0,0,0,0.08),0 4px 6px rgba(0,0,0,0.04)">
+    <div class="shadow-name">shadow-lg</div>
+    <div class="shadow-val">modals, drawers</div>
+  </div>
+</div>
+
+</body>
+</html>

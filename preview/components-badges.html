@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #fff; padding: 20px; color: #0F172A; }
+  .label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .divider { height: 1px; background: #E2E8F0; margin: 14px 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 500; border: 1px solid; white-space: nowrap; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="label">Calibration Status</div>
+<div class="row">
+  <span class="badge" style="background:#F0FDF4;color:#15803D;border-color:#22C55E">
+    <span class="dot" style="background:#16A34A"></span>Em dia
+  </span>
+  <span class="badge" style="background:#FFFBEB;color:#B45309;border-color:#F59E0B">
+    <span class="dot" style="background:#D97706"></span>Vencendo em breve
+  </span>
+  <span class="badge" style="background:#FEF2F2;color:#B91C1C;border-color:#EF4444">
+    <span class="dot" style="background:#DC2626"></span>Vencido
+  </span>
+</div>
+
+<div class="label">Workflow Status</div>
+<div class="row">
+  <span class="badge" style="background:#F1F4F8;color:#475569;border-color:#94A3B8">Rascunho</span>
+  <span class="badge" style="background:#EFF6FF;color:#1D4ED8;border-color:#3B82F6">Em andamento</span>
+  <span class="badge" style="background:#E6FAFA;color:#006960;border-color:#00B5A4">Concluída</span>
+  <span class="badge" style="background:#E6FAFA;color:#006960;border-color:#00B5A4">Aprovado</span>
+  <span class="badge" style="background:#FEF2F2;color:#B91C1C;border-color:#EF4444">Revogado</span>
+  <span class="badge" style="background:#FFFBEB;color:#B45309;border-color:#F59E0B">Suspenso</span>
+</div>
+
+<div class="divider"></div>
+
+<div class="label">Plan Tiers</div>
+<div class="row">
+  <span class="chip" style="background:#F1F4F8;color:#475569">Starter</span>
+  <span class="chip" style="background:#EEF3FB;color:#1A3A6C;font-weight:600">Pro</span>
+  <span class="chip" style="background:#1A3A6C;color:#fff">Enterprise</span>
+  <span class="chip" style="background:#FFFBEB;color:#B45309">Trial · 18 dias</span>
+</div>
+
+<div class="divider"></div>
+
+<div class="label">Role Badges</div>
+<div class="row">
+  <span class="chip" style="background:#EEF3FB;color:#1A3A6C;border-radius:4px">Admin</span>
+  <span class="chip" style="background:#E6FAFA;color:#006960;border-radius:4px">Técnico</span>
+  <span class="chip" style="background:#F1F4F8;color:#475569;border-radius:4px">Atendente</span>
+  <span class="chip" style="background:#FFFBEB;color:#B45309;border-radius:4px">Cliente</span>
+  <span class="chip" style="background:#0F172A;color:#fff;border-radius:4px">Superadmin</span>
+</div>
+
+</body>
+</html>

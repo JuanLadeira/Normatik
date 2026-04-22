@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 36" fill="none">
+  
+  <rect x="2" y="8" width="28" height="20" rx="4" fill="#1A3A6C"></rect>
+  <line x1="8" y1="22" x2="8" y2="16" stroke="#00B5A4" stroke-width="2" stroke-linecap="round"></line>
+  <line x1="13" y1="22" x2="13" y2="13" stroke="#00B5A4" stroke-width="2" stroke-linecap="round"></line>
+  <line x1="18" y1="22" x2="18" y2="16" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></line>
+  <line x1="23" y1="22" x2="23" y2="19" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></line>
+  
+  <text x="38" y="25" font-family="IBM Plex Sans, sans-serif" font-size="18" font-weight="600" fill="#1A3A6C" letter-spacing="-0.3">Normatiq</text>
+</svg>

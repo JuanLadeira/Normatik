@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #fff; padding: 20px; color: #0F172A; }
+  .label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .scale { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 20px; }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar { background: #1A3A6C; border-radius: 2px; width: 28px; }
+  .step-label { font-size: 9px; font-family: monospace; color: #64748B; }
+  .step-val { font-size: 9px; font-family: monospace; color: #94A3B8; }
+  .divider { height: 1px; background: #E2E8F0; margin: 12px 0; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .token-item { display: flex; align-items: center; gap: 8px; }
+  .swatch-box { border: 1px solid #E2E8F0; background: #F8FAFC; display: flex; align-items: center; justify-content: center; font-size: 9px; font-family: monospace; color: #94A3B8; }
+</style>
+</head>
+<body>
+
+<div class="label">Spacing Scale — 8px base grid</div>
+<div class="scale">
+  <div class="step"><div class="bar" style="height:4px"></div><div class="step-label">space-1</div><div class="step-val">4px</div></div>
+  <div class="step"><div class="bar" style="height:8px"></div><div class="step-label">space-2</div><div class="step-val">8px</div></div>
+  <div class="step"><div class="bar" style="height:12px"></div><div class="step-label">space-3</div><div class="step-val">12px</div></div>
+  <div class="step"><div class="bar" style="height:16px"></div><div class="step-label">space-4</div><div class="step-val">16px</div></div>
+  <div class="step"><div class="bar" style="height:20px"></div><div class="step-label">space-5</div><div class="step-val">20px</div></div>
+  <div class="step"><div class="bar" style="height:24px"></div><div class="step-label">space-6</div><div class="step-val">24px</div></div>
+  <div class="step"><div class="bar" style="height:32px"></div><div class="step-label">space-8</div><div class="step-val">32px</div></div>
+  <div class="step"><div class="bar" style="height:40px"></div><div class="step-label">space-10</div><div class="step-val">40px</div></div>
+  <div class="step"><div class="bar" style="height:48px"></div><div class="step-label">space-12</div><div class="step-val">48px</div></div>
+  <div class="step"><div class="bar" style="height:64px"></div><div class="step-label">space-16</div><div class="step-val">64px</div></div>
+</div>
+
+<div class="divider"></div>
+
+<div class="label">Touch Targets</div>
+<div class="row">
+  <div class="token-item">
+    <div class="swatch-box" style="width:44px;height:44px;border-radius:6px">44dp</div>
+    <div style="font-size:11px;color:#334155;font-weight:500">Min touch target<br><span style="font-size:10px;color:#64748B">Buttons, nav items</span></div>
+  </div>
+  <div class="token-item">
+    <div class="swatch-box" style="width:48px;height:48px;border-radius:6px">48dp</div>
+    <div style="font-size:11px;color:#334155;font-weight:500">Comfortable<br><span style="font-size:10px;color:#64748B">Primary actions</span></div>
+  </div>
+  <div class="token-item">
+    <div class="swatch-box" style="width:56px;height:56px;border-radius:6px">56dp</div>
+    <div style="font-size:11px;color:#334155;font-weight:500">FAB<br><span style="font-size:10px;color:#64748B">Floating action</span></div>
+  </div>
+</div>
+
+</body>
+</html>

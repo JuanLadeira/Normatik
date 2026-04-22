@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #F1F4F8; padding: 20px; color: #0F172A; }
+  .label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .table-wrap { background: #fff; border-radius: 8px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #F8FAFC; font-size: 11px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 14px; text-align: left; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid #F1F4F8; transition: background 100ms; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #F8FAFC; }
+  td { font-size: 13px; padding: 10px 14px; vertical-align: middle; }
+  .mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; border: 1px solid; white-space: nowrap; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .actions { display: flex; gap: 6px; }
+  .action-btn { background: none; border: none; font-size: 12px; font-family: 'IBM Plex Sans',sans-serif; font-weight: 500; color: #1A3A6C; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+  .action-btn:hover { background: #EEF3FB; }
+</style>
+</head>
+<body>
+
+<div class="label">Data Table — Padrões de Referência</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Tag</th>
+        <th>Descrição</th>
+        <th>Vencimento</th>
+        <th>Situação</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="mono">PAT-001</span></td>
+        <td>Micrômetro padrão 0–25 mm</td>
+        <td><span class="mono">30/06/2025</span></td>
+        <td><span class="badge" style="background:#F0FDF4;color:#15803D;border-color:#22C55E"><span class="dot" style="background:#16A34A"></span>Em dia</span></td>
+        <td><div class="actions"><button class="action-btn">Ver</button><button class="action-btn">Histórico</button></div></td>
+      </tr>
+      <tr>
+        <td><span class="mono">PAT-002</span></td>
+        <td>Bloco padrão grau 1</td>
+        <td><span class="mono" style="color:#D97706">08/05/2025</span></td>
+        <td><span class="badge" style="background:#FFFBEB;color:#B45309;border-color:#F59E0B"><span class="dot" style="background:#D97706"></span>17 dias</span></td>
+        <td><div class="actions"><button class="action-btn">Ver</button><button class="action-btn">Histórico</button></div></td>
+      </tr>
+      <tr>
+        <td><span class="mono">PAT-003</span></td>
+        <td>Termômetro de referência</td>
+        <td><span class="mono" style="color:#DC2626">12/03/2025</span></td>
+        <td><span class="badge" style="background:#FEF2F2;color:#B91C1C;border-color:#EF4444"><span class="dot" style="background:#DC2626"></span>Vencido</span></td>
+        <td><div class="actions"><button class="action-btn">Ver</button><button class="action-btn">Renovar</button></div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

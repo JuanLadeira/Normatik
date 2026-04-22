@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #fff; padding: 20px; color: #0F172A; }
+  .label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .divider { height: 1px; background: #E2E8F0; margin: 14px 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+
+  button { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500; border: none; cursor: pointer; border-radius: 6px; padding: 0 16px; height: 36px; display: inline-flex; align-items: center; gap: 6px; transition: all 150ms ease-out; }
+
+  .btn-primary { background: #1A3A6C; color: #fff; }
+  .btn-primary:hover { background: #152E56; }
+
+  .btn-accent { background: #00B5A4; color: #fff; }
+  .btn-accent:hover { background: #008F82; }
+
+  .btn-secondary { background: #F1F4F8; color: #1E293B; border: 1px solid #E2E8F0; }
+  .btn-secondary:hover { background: #E2E8F0; }
+
+  .btn-ghost { background: transparent; color: #1A3A6C; }
+  .btn-ghost:hover { background: #EEF3FB; }
+
+  .btn-danger { background: #DC2626; color: #fff; }
+  .btn-danger:hover { background: #B91C1C; }
+
+  .btn-outline { background: transparent; color: #1A3A6C; border: 1.5px solid #1A3A6C; }
+  .btn-outline:hover { background: #EEF3FB; }
+
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; border-radius: 4px; }
+  .btn-lg { height: 44px; padding: 0 20px; font-size: 16px; border-radius: 8px; }
+
+  .btn-disabled { opacity: 0.4; pointer-events: none; }
+  .icon { width: 16px; height: 16px; background: currentColor; border-radius: 2px; opacity: 0.7; }
+</style>
+</head>
+<body>
+
+<div class="label">Primary Actions</div>
+<div class="row">
+  <button class="btn-primary">Salvar</button>
+  <button class="btn-accent">Emitir Certificado</button>
+  <button class="btn-outline">Visualizar</button>
+  <button class="btn-secondary">Cancelar</button>
+  <button class="btn-ghost">Ver detalhes</button>
+  <button class="btn-danger">Revogar</button>
+</div>
+
+<div class="divider"></div>
+
+<div class="label">Sizes</div>
+<div class="row">
+  <button class="btn-primary btn-sm">Aprovar</button>
+  <button class="btn-primary">Salvar rascunho</button>
+  <button class="btn-primary btn-lg">Emitir Certificado</button>
+</div>
+
+<div class="divider"></div>
+
+<div class="label">States</div>
+<div class="row">
+  <button class="btn-primary">Normal</button>
+  <button class="btn-primary btn-disabled">Desabilitado</button>
+  <button class="btn-secondary btn-disabled">Desabilitado</button>
+</div>
+
+</body>
+</html>

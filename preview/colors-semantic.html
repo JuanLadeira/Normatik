@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #fff; padding: 20px; }
+  .section-label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .color-group { border-radius: 8px; overflow: hidden; }
+  .swatch-main { height: 44px; display: flex; align-items: flex-end; padding: 6px 8px; }
+  .swatch-light { height: 28px; }
+  .label { font-size: 10px; font-weight: 600; color: #fff; }
+  .meta { padding: 8px; }
+  .meta-name { font-size: 11px; font-weight: 600; color: #334155; }
+  .meta-hex { font-size: 10px; color: #64748B; font-family: monospace; }
+
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 500; border: 1px solid; }
+</style>
+</head>
+<body>
+
+<div class="section-label">Status Colors</div>
+<div class="row">
+  <div class="color-group" style="border:1px solid #E2E8F0">
+    <div class="swatch-main" style="background:#16A34A"><span class="label">success-600</span></div>
+    <div class="swatch-light" style="background:#DCFCE7"></div>
+    <div class="meta"><div class="meta-name">Success</div><div class="meta-hex">#16A34A</div></div>
+  </div>
+  <div class="color-group" style="border:1px solid #E2E8F0">
+    <div class="swatch-main" style="background:#D97706"><span class="label">warning-600</span></div>
+    <div class="swatch-light" style="background:#FEF3C7"></div>
+    <div class="meta"><div class="meta-name">Warning</div><div class="meta-hex">#D97706</div></div>
+  </div>
+  <div class="color-group" style="border:1px solid #E2E8F0">
+    <div class="swatch-main" style="background:#DC2626"><span class="label">danger-600</span></div>
+    <div class="swatch-light" style="background:#FEE2E2"></div>
+    <div class="meta"><div class="meta-name">Danger</div><div class="meta-hex">#DC2626</div></div>
+  </div>
+  <div class="color-group" style="border:1px solid #E2E8F0">
+    <div class="swatch-main" style="background:#2563EB"><span class="label">info-600</span></div>
+    <div class="swatch-light" style="background:#DBEAFE"></div>
+    <div class="meta"><div class="meta-name">Info</div><div class="meta-hex">#2563EB</div></div>
+  </div>
+</div>
+
+<div class="section-label">Status Badges — Calibração</div>
+<div class="badge-row">
+  <span class="badge" style="background:#F0FDF4;color:#15803D;border-color:#22C55E">Em dia</span>
+  <span class="badge" style="background:#FFFBEB;color:#B45309;border-color:#F59E0B">Vencendo em breve</span>
+  <span class="badge" style="background:#FEF2F2;color:#B91C1C;border-color:#EF4444">Vencido</span>
+  <span class="badge" style="background:#F1F4F8;color:#475569;border-color:#94A3B8">Rascunho</span>
+  <span class="badge" style="background:#EFF6FF;color:#1D4ED8;border-color:#3B82F6">Em andamento</span>
+  <span class="badge" style="background:#E6FAFA;color:#006960;border-color:#00B5A4">Concluída</span>
+  <span class="badge" style="background:#E6FAFA;color:#006960;border-color:#00B5A4">Aprovado</span>
+  <span class="badge" style="background:#FEF2F2;color:#B91C1C;border-color:#EF4444">Revogado</span>
+</div>
+
+</body>
+</html>

@@ -78,6 +78,7 @@ select = [
 ignore = [
     "E501", # Linhas longas (formatter resolve)
     "B008", # Depends() no FastAPI
+    "I001", # Ordenação de imports (isort)
 ]
 
 [tool.ruff.lint.isort]

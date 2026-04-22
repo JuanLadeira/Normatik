@@ -56,7 +56,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+asyncpg://normatik:normatik@localhost:5432/normatik
       REDIS_URL: redis://localhost:6379/0
-      SECRET_KEY: ci-test-secret-key
+      SECRET_KEY: ci-test-secret-key-very-long-and-secure-32-chars
       ENCRYPTION_KEY: D7Lg8YvE1WvXyv7eL5aK4pY6Q9V2b4N7c8D9E0F1G2H=
     steps:
       - uses: actions/checkout@v4

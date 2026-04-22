@@ -1,18 +1,30 @@
 import pytest
+from app.domains.admin.model import Admin
+from app.core.security import get_password_hash
+
+
+@pytest.fixture
+async def setup_admin(db_session):
+    """Cria um admin de teste explicitamente."""
+    admin = Admin(
+        username="admin_test",
+        email="admin@test.com",
+        password=get_password_hash("testpassword123"),
+        nome="Admin de Teste",
+        ativo=True,
+    )
+    db_session.add(admin)
+    await db_session.commit()
+    return admin
 
 
 @pytest.mark.asyncio
-async def test_admin_login_success(client, db_session):
+async def test_admin_login_success(client, setup_admin):
     """
-    Testa se o admin padrão criado no seed consegue logar.
+    Testa se o admin criado no teste consegue logar.
     """
-    from app.core.settings import settings
-
     # Payload para login (OAuth2 Form)
-    login_data = {
-        "username": settings.ADMIN_DEFAULT_USERNAME,
-        "password": settings.ADMIN_DEFAULT_PASSWORD,
-    }
+    login_data = {"username": "admin_test", "password": "testpassword123"}
 
     # Tenta logar
     response = await client.post("/api/admin/login", data=login_data)

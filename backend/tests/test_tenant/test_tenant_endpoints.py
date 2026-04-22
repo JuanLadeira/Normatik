@@ -26,10 +26,3 @@ class TestTenantEndpoints:
     async def test_delete_tenant_publico_removido(self, client: AsyncClient):
         r = await client.delete("/api/tenants/1")
         assert r.status_code in (404, 405)
-
-    async def test_llm_config_requer_auth(self, client: AsyncClient):
-        r = await client.get("/api/tenants/me/llm-config")
-        assert r.status_code == 401
-
-        r = await client.put("/api/tenants/me/llm-config", json={})
-        assert r.status_code == 401

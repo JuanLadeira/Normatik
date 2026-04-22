@@ -1,9 +1,12 @@
+import asyncio
+
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from app.main import app
+
 from app.core.database import get_db
 from app.core.settings import settings
+from app.main import app
 
 # Usar o mesmo banco normatik com transações isoladas por teste.
 TEST_DATABASE_URL = settings.DATABASE_URL

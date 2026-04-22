@@ -1,10 +1,12 @@
-import pytest
 from datetime import UTC, datetime, timedelta
+
+import pytest
 from sqlalchemy import select
+
 from app.domains.tenants.model import Tenant, TenantStatus
 from app.domains.tenants.repository import TenantRepository
-from app.domains.tenants.service import TenantService
 from app.domains.tenants.schema import TenantCreate
+from app.domains.tenants.service import TenantService
 
 
 @pytest.mark.asyncio
@@ -15,7 +17,9 @@ async def test_create_tenant_success(db_session):
     repo = TenantRepository(db_session)
     service = TenantService(repo)
     data = TenantCreate(
-        nome="Empresa Teste", email_gestor="gestor@teste.com", cnpj="12.345.678/0001-90"
+        nome="Empresa Teste",
+        email_gestor="gestor@teste.com",
+        cnpj="12.345.678/0001-90",
     )
 
     tenant = await service.create(data)

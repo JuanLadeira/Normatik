@@ -1,42 +1,8 @@
 import pytest
-from app.domains.tenants.model import Tenant, TenantStatus
-from app.domains.users.model import User, UserRole
-from app.core.security import get_password_hash
 from sqlalchemy import select
 
-
-@pytest.fixture
-async def admin_user(db_session):
-    """Cria um tenant e um usuário admin."""
-    t = Tenant(
-        nome="Lab Teste",
-        slug="lab-teste",
-        status=TenantStatus.active,
-        email_gestor="admin@labteste.com",
-        cnpj="12.345.678/0001-90",
-    )
-    db_session.add(t)
-    await db_session.flush()
-
-    u = User(
-        email="admin@labteste.com",
-        password=get_password_hash("admin123"),
-        nome="Admin Lab",
-        role=UserRole.admin,
-        tenant_id=t.id,
-        is_active=True,
-    )
-    db_session.add(u)
-    await db_session.commit()
-    return u
-
-
-@pytest.fixture
-async def admin_token(client, admin_user):
-    """Retorna o token de acesso do admin."""
-    login_data = {"username": admin_user.email, "password": "admin123"}
-    response = await client.post("/api/auth/login", data=login_data)
-    return response.json()["access_token"]
+from app.domains.users.model import User, UserRole
+from app.core.security import get_password_hash
 
 
 @pytest.mark.asyncio

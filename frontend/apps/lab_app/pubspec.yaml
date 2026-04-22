@@ -1,0 +1,45 @@
+name: lab_app
+description: "Normatiq Lab App - Técnicos e Gestores"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Shared Packages (Monorepo)
+  normatiq_ui:
+    path: ../../packages/normatiq_ui
+  normatiq_api:
+    path: ../../packages/normatiq_api
+  normatiq_domain:
+    path: ../../packages/normatiq_domain
+
+  # State Management & DI
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^14.2.1
+
+  # HTTP & Auth
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+
+  # Utilities
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.11
+  riverpod_generator: ^2.4.0
+
+flutter:
+  uses-material-design: true

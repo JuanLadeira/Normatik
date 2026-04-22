@@ -30,6 +30,8 @@ services:
     env_file: .env
     volumes:
       - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
     depends_on:
       - redis
       - postgres
@@ -44,6 +46,8 @@ services:
     env_file: .env
     volumes:
       - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
     depends_on:
       - redis
     restart: unless-stopped

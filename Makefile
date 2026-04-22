@@ -34,8 +34,12 @@ db-makemigrations: ## Gera uma nova migração (uso: make db-makemigrations msg=
 db-seed: ## Executa o script de seed inicial
 	$(DC) exec $(APP_SERVICE) /entrypoint.sh
 
-test: ## Executa os testes automatizados
-	$(DC) exec $(APP_SERVICE) uv run pytest
+lint: ## Executa a verificação de lint e formatação (Ruff)
+	$(DC) exec $(APP_SERVICE) /app/.venv/bin/ruff check . --fix
+	$(DC) exec $(APP_SERVICE) /app/.venv/bin/ruff format .
+
+test: lint ## Executa o lint e depois os testes automatizados
+	$(DC) exec $(APP_SERVICE) /app/.venv/bin/python -m pytest
 
 clean: ## Remove volumes e imagens órfãs
 	$(DC) down -v --remove-orphans

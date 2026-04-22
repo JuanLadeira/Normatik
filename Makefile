@@ -41,5 +41,11 @@ lint: ## Executa a verificação de lint e formatação (Ruff)
 test: lint ## Executa o lint e depois os testes automatizados
 	$(DC) exec $(APP_SERVICE) /app/.venv/bin/python -m pytest
 
+logs-f: ## Exibe os logs do frontend
+	$(DC) logs -f frontend
+
+rf: ## Reinicia rapidamente o frontend para aplicar mudanças de código
+	$(DC) restart frontend
+
 clean: ## Remove volumes e imagens órfãs
 	$(DC) down -v --remove-orphans

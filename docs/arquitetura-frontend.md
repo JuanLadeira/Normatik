@@ -26,12 +26,20 @@ frontend/
     └── admin_app/        # Gestão interna da plataforma (SaaS)
 ```
 
-## 🎨 Design & UI (Baseado no UI Kit)
-O design segue as especificações encontradas em `ui_kits/lab_app`. 
-- **Mobile-first:** Layouts otimizados para 360dp.
-- **Tokens:** Cores e tipografia definidas em `colors_and_type.css` serão transpostas para o `normatiq_ui`.
+## 🔒 Segurança e Autenticação
+A autenticação é baseada em **OAuth2 (Password Flow)** fornecido pelo FastAPI.
 
-## 🔄 Fluxo de Desenvolvimento
+- **Fluxo de Login:** A `LoginPage` dispara o `authProvider`, que utiliza o `ApiClient` (Dio) para obter um token JWT.
+- **Persistência:** O token é armazenado localmente usando `flutter_secure_storage`.
+- **Interceptors:** O `ApiClient` injeta automaticamente o cabeçalho `Authorization: Bearer <token>` em todas as requisições se o token existir.
+- **Navegação Protegida (Auth Guard):** Utilizamos a propriedade `redirect` do `GoRouter` em conjunto com o estado do `authProvider`. Qualquer tentativa de acesso a rotas privadas sem um token válido redireciona o usuário para `/login`.
+
+## 🧠 Gerenciamento de Estado
+- **Riverpod:** Escolhido pela sua robustez e facilidade de Injeção de Dependências.
+- **Providers:**
+    - `apiClientProvider`: Singleton do cliente HTTP.
+    - `authProvider`: StateNotifier que gerencia o ciclo de vida da sessão.
+    - `_routerProvider`: Centraliza a configuração de rotas e lógica de redirecionamento.
 1. Alterações em modelos de dados devem ser refletidas primeiro em `normatiq_domain`.
 2. Componentes visuais novos entram no `normatiq_ui`.
 3. Telas e lógica de navegação ficam dentro dos respectivos `apps/`.

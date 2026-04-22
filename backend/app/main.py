@@ -22,6 +22,7 @@ import app.domains.tenants.model  # noqa: F401
 import app.domains.users.model  # noqa: F401
 import app.domains.subscriptions.model  # noqa: F401
 import app.domains.admin.model  # noqa: F401
+import app.domains.outbox.model  # noqa: F401
 
 
 @asynccontextmanager

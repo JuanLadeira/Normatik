@@ -8,14 +8,17 @@ from app.core.security import (
     decode_invite_token,
     get_password_hash,
 )
+from app.domains.outbox.model import OutboxEvent, OutboxEventType
+from app.domains.outbox.repository import OutboxRepository, OutboxRepositoryDep
 from app.domains.users.model import User
 from app.domains.users.repository import UserRepository, UserRepositoryDep
 from app.domains.users.schema import UserInvite, UserUpdate
 
 
 class UserService:
-    def __init__(self, repo: UserRepository):
+    def __init__(self, repo: UserRepository, outbox_repo: OutboxRepository):
         self.repo = repo
+        self.outbox_repo = outbox_repo
 
     async def get_by_id(self, user_id: int) -> User | None:
         return await self.repo.get_by_id(user_id)
@@ -30,8 +33,10 @@ class UserService:
         return await self.repo.count_active_by_tenant(tenant_id)
 
     async def invite(self, tenant_id: int, data: UserInvite) -> User:
-        """Cria o usuário com status pendente e gera o token de convite (expira em 48h)."""
+        """Cria o usuário e agenda o e-mail de convite via Outbox."""
         token = create_invite_token(data.email)
+
+        # 1. Cria o usuário operacional (inativo)
         user = User(
             tenant_id=tenant_id,
             email=data.email,
@@ -42,7 +47,16 @@ class UserService:
             invite_expires_at=datetime.now(UTC).replace(tzinfo=None)
             + timedelta(hours=48),
         )
-        return await self.repo.save(user)
+        saved_user = await self.repo.save(user)
+
+        # 2. Agenda o e-mail no Outbox (mesma transação)
+        event = OutboxEvent(
+            event_type=OutboxEventType.USER_INVITE,
+            payload={"email": user.email, "nome": user.nome, "token": token},
+        )
+        await self.outbox_repo.save(event)
+
+        return saved_user
 
     async def accept_invite(self, token: str, password: str) -> User | None:
         """Valida o token de convite, define a senha e ativa o usuário."""
@@ -84,8 +98,10 @@ class UserService:
         return await self.repo.save(user)
 
 
-def get_user_service(repo: UserRepositoryDep) -> UserService:
-    return UserService(repo)
+def get_user_service(
+    repo: UserRepositoryDep, outbox_repo: OutboxRepositoryDep
+) -> UserService:
+    return UserService(repo, outbox_repo)
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]

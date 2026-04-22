@@ -29,9 +29,15 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Admin padrão (seed)
+    # Admin padrão (seed global)
     ADMIN_DEFAULT_USERNAME: str = "admin"
     ADMIN_DEFAULT_PASSWORD: str = "admin"
+
+    # Dono do projeto (Admin + Tenant inicial)
+    OWNER_EMAIL: str = "admin@normatiq.com.br"
+    OWNER_PASSWORD: str = "admin"
+    OWNER_TENANT_NAME: str = "Normatiq Lab"
+    OWNER_TENANT_SLUG: str = "normatiq"
 
     # Criptografia de campos sensíveis (Fernet)
     ENCRYPTION_KEY: str = Field(default="")

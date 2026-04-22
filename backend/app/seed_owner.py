@@ -1,94 +1,103 @@
-#!/bin/bash
-set -e
-
-echo "[entrypoint] Rodando migrações Alembic..."
-uv run alembic upgrade head
-
-echo "[entrypoint] Rodando seed inicial..."
-uv run python -c "
 import asyncio
+import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.core.settings import settings
 from app.core.security import get_password_hash
-from app.core.database import Base
 
-# Importa todos os models para o SQLAlchemy resolver relacionamentos
-from app.domains.plans.model import Plan
+# IMPORTANTE: Importar todos os models para o SQLAlchemy resolver relacionamentos
 from app.domains.tenants.model import Tenant, TenantStatus
 from app.domains.users.model import User, UserRole
-from app.domains.subscriptions.model import Subscription
 from app.domains.admin.model import Admin
 
-async def main():
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("seed")
+
+
+async def run_seed():
+    logger.info(f"Conectando ao banco: {settings.DATABASE_URL}")
     engine = create_async_engine(settings.DATABASE_URL)
     Session = async_sessionmaker(engine, expire_on_commit=False)
 
     async with Session() as session:
-        async with session.begin():
-            # 1. Seed admin global (Superadmin)
+        try:
+            # 1. ADMIN
+            logger.info("Verificando Admin...")
             result = await session.execute(
                 select(Admin).where(Admin.username == settings.ADMIN_DEFAULT_USERNAME)
             )
             admin = result.scalar_one_or_none()
-
             if not admin:
-                new_admin = Admin(
+                admin = Admin(
                     username=settings.ADMIN_DEFAULT_USERNAME,
                     email=settings.OWNER_EMAIL,
                     password=get_password_hash(settings.ADMIN_DEFAULT_PASSWORD),
-                    nome='Super Administrador',
-                    ativo=True
+                    nome="Super Administrador",
+                    ativo=True,
                 )
-                session.add(new_admin)
-                print(f'[seed] Admin {settings.ADMIN_DEFAULT_USERNAME!r} criado.')
+                session.add(admin)
+                logger.info(f"Admin {settings.ADMIN_DEFAULT_USERNAME} criado.")
             else:
                 admin.password = get_password_hash(settings.ADMIN_DEFAULT_PASSWORD)
                 admin.email = settings.OWNER_EMAIL
-                print(f'[seed] Admin {settings.ADMIN_DEFAULT_USERNAME!r} atualizado.')
+                logger.info(
+                    f"Admin {settings.ADMIN_DEFAULT_USERNAME} já existe, dados atualizados."
+                )
 
-            # 2. Seed Tenant do Dono
+            # 2. TENANT
+            logger.info("Verificando Tenant...")
             result = await session.execute(
                 select(Tenant).where(Tenant.slug == settings.OWNER_TENANT_SLUG)
             )
             tenant = result.scalar_one_or_none()
-
             if not tenant:
                 tenant = Tenant(
                     nome=settings.OWNER_TENANT_NAME,
                     slug=settings.OWNER_TENANT_SLUG,
                     email_gestor=settings.OWNER_EMAIL,
-                    status=TenantStatus.active
+                    status=TenantStatus.active,
                 )
                 session.add(tenant)
                 await session.flush()
-                print(f'[seed] Tenant {settings.OWNER_TENANT_SLUG!r} criado.')
-            
-            # 3. Seed Usuário Operacional do Dono
+                logger.info(f"Tenant {settings.OWNER_TENANT_SLUG} criado.")
+            else:
+                logger.info(f"Tenant {settings.OWNER_TENANT_SLUG} já existe.")
+
+            # 3. USER
+            logger.info("Verificando Usuário Operacional...")
             result = await session.execute(
                 select(User).where(User.email == settings.OWNER_EMAIL)
             )
             user = result.scalar_one_or_none()
-
             if not user:
-                new_user = User(
+                user = User(
                     email=settings.OWNER_EMAIL,
                     password=get_password_hash(settings.OWNER_PASSWORD),
-                    nome='Dono do Laboratório',
+                    nome="Dono do Laboratório",
                     role=UserRole.admin,
                     tenant_id=tenant.id,
-                    is_active=True
+                    is_active=True,
                 )
-                session.add(new_user)
-                print(f'[seed] Usuário operacional {settings.OWNER_EMAIL!r} criado.')
+                session.add(user)
+                logger.info(f"Usuário {settings.OWNER_EMAIL} criado.")
             else:
                 user.password = get_password_hash(settings.OWNER_PASSWORD)
                 user.tenant_id = tenant.id
                 user.is_active = True
-                print(f'[seed] Usuário operacional {settings.OWNER_EMAIL!r} atualizado.')
+                logger.info(
+                    f"Usuário {settings.OWNER_EMAIL} já existe, dados atualizados."
+                )
 
-asyncio.run(main())
-"
+            await session.commit()
+            logger.info("Seed finalizado com sucesso!")
 
-echo "[entrypoint] Pronto. Iniciando servidor..."
-exec "$@"
+        except Exception as e:
+            logger.error(f"ERRO NO SEED: {e}")
+            await session.rollback()
+            raise e
+        finally:
+            await engine.dispose()
+
+
+if __name__ == "__main__":
+    asyncio.run(run_seed())

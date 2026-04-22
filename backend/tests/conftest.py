@@ -12,7 +12,7 @@ from app.main import app
 TEST_DATABASE_URL = settings.DATABASE_URL
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 async def setup_test_db():
     """Garante que todas as tabelas existem no banco de testes."""
     engine = create_async_engine(TEST_DATABASE_URL)

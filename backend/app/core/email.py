@@ -6,6 +6,7 @@ from app.core.settings import settings
 
 logger = logging.getLogger("email")
 
+
 class EmailService:
     def _get_base_template(self, content: str) -> str:
         """Retorna o invólucro HTML padrão para todos os e-mails do sistema."""
@@ -78,9 +79,9 @@ class EmailService:
     def send_user_invite(self, email: str, nome: str, token: str):
         """Prepara e envia o e-mail de convite com o novo template."""
         invite_url = f"{settings.FRONTEND_URL}/accept-invite?token={token}"
-        
+
         subject = "Bem-vindo ao Normatiq — Convite para Colaborador"
-        
+
         content = f"""
             <h1>Olá, {nome}!</h1>
             <p>Você foi convidado para colaborar no laboratório <strong>{settings.OWNER_TENANT_NAME}</strong>.</p>
@@ -94,8 +95,9 @@ class EmailService:
                 <span style="word-break: break-all; color: #1A3A6C;">{invite_url}</span>
             </p>
         """
-        
+
         html = self._get_base_template(content)
         self.send_email(email, subject, html)
+
 
 email_service = EmailService()

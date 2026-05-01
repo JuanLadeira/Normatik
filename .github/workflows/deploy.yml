@@ -1,0 +1,35 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.PROD_PATH }}
+
+            echo "==> Atualizando código..."
+            git pull origin main
+
+            echo "==> Rebuilding imagens..."
+            docker compose -f docker-compose.prod.yml build
+
+            echo "==> Subindo containers..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "==> Limpando imagens antigas..."
+            docker image prune -f
+
+            echo "==> Deploy concluído."

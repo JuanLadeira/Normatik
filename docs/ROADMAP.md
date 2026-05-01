@@ -9,6 +9,7 @@
 |------|------|---------|----------|---------|
 | **F0** | Infraestrutura | — | `feature/f0-infra-docker` | Ambiente local completo |
 | **F1** | Fundação & Auth | M01 | `feature/f1-*` | Multi-tenancy, auth, roles |
+| **F1.5** | Outbox Genérico | — | `feature/f1-outbox-dispatcher` | Dispatcher extensível + handler registry |
 | **F2** | Core Metrológico | M02, M03, M04 | `feature/f2-*` | Padrões, instrumentos, calibração + GUM |
 | **F3** | Certificados | M05 | `feature/f3-*` | Emissão PDF ISO 17025 |
 | **F4** | Operação Comercial | M06, M07, M27 | `feature/f4-*` | Orçamentos, pedidos, estoque |
@@ -132,6 +133,161 @@ app/domains/
 - JWT payload: `{ tenant_id, user_id, role, exp }`
 - Refresh token com validade 7 dias armazenado em tabela `refresh_tokens`
 - Convite por e-mail via Celery task (não bloqueia a request) + Mailpit em dev
+
+---
+
+## F1.5 · Outbox Genérico — Dispatcher Extensível
+
+**Branch:** `feature/f1-outbox-dispatcher`
+
+### Objetivo
+
+Transformar o outbox de um despachante de e-mails hard-coded em uma **infraestrutura de entrega garantida para qualquer tarefa assíncrona**. A partir desta fase, adicionar um novo tipo de processamento assíncrono (emissão de certificado, análise GUM, geração de PDF, webhook externo) é apenas registrar um handler — sem tocar no worker ou no modelo do outbox.
+
+### Motivação
+
+O worker atual (`celery.py`) contém um `if/elif` que cresce a cada novo tipo de evento e mistura a lógica de entrega com a lógica de negócio. A fase F3 (Certificados) e F5 (Alertas) precisarão despachar Celery tasks pesadas com garantia de at-least-once delivery — o outbox é o lugar certo para isso, mas precisa ser genérico primeiro.
+
+### Estrutura após a refatoração
+
+```
+app/domains/outbox/
+├── model.py           # OutboxEvent, OutboxStatus, OutboxEventType (enum cresce aqui)
+├── repository.py      # sem mudança
+├── dispatcher.py      # NOVO — handler registry + dispatch()
+└── handlers/
+    ├── __init__.py    # importa todos os módulos para forçar registro
+    ├── auth.py        # USER_INVITE, PASSWORD_RESET → e-mail
+    ├── certificates.py  # CERTIFICATE_EMIT → generate_certificate.apply_async()
+    └── alerts.py      # STANDARD_EXPIRY_ALERT, INSTRUMENT_EXPIRY_ALERT → e-mail/task
+```
+
+### Contrato do handler
+
+```python
+# app/domains/outbox/dispatcher.py
+from collections.abc import Awaitable, Callable
+from typing import TypeAlias
+from app.domains.outbox.model import OutboxEvent, OutboxEventType
+
+Handler: TypeAlias = Callable[[OutboxEvent], Awaitable[None]]
+
+_registry: dict[OutboxEventType, Handler] = {}
+
+def register(event_type: OutboxEventType) -> Callable[[Handler], Handler]:
+    def decorator(fn: Handler) -> Handler:
+        _registry[event_type] = fn
+        return fn
+    return decorator
+
+async def dispatch(event: OutboxEvent) -> None:
+    handler = _registry.get(event.event_type)
+    if handler is None:
+        raise ValueError(f"Nenhum handler registrado para {event.event_type}")
+    await handler(event)
+```
+
+### Handlers de auth (migração do código atual)
+
+```python
+# app/domains/outbox/handlers/auth.py
+import asyncio
+from app.core.email import email_service
+from app.domains.outbox.dispatcher import register
+from app.domains.outbox.model import OutboxEventType
+
+@register(OutboxEventType.USER_INVITE)
+async def handle_user_invite(event) -> None:
+    await asyncio.to_thread(
+        email_service.send_user_invite,
+        email=event.payload["email"],
+        nome=event.payload["nome"],
+        token=event.payload["token"],
+    )
+
+@register(OutboxEventType.PASSWORD_RESET)
+async def handle_password_reset(event) -> None:
+    await asyncio.to_thread(
+        email_service.send_password_reset,
+        email=event.payload["email"],
+        token=event.payload["token"],
+    )
+```
+
+### Handler de Celery task (padrão para F3+)
+
+```python
+# app/domains/outbox/handlers/certificates.py
+from app.domains.outbox.dispatcher import register
+from app.domains.outbox.model import OutboxEventType
+
+@register(OutboxEventType.CERTIFICATE_EMIT)
+async def handle_certificate_emit(event) -> None:
+    from app.domains.certificates.tasks import generate_certificate_pdf
+    # idempotency_key vira task_id — Celery ignora reenvios do mesmo ID
+    generate_certificate_pdf.apply_async(
+        kwargs=event.payload,
+        task_id=str(event.idempotency_key),
+    )
+```
+
+### Worker genérico (substitui o if/elif atual)
+
+```python
+# app/core/celery.py — _run_process_outbox()
+async def _run_process_outbox():
+    import app.domains.outbox.handlers  # garante que os handlers estejam registrados
+
+    from app.domains.outbox.dispatcher import dispatch
+
+    events = await repo.get_pending(limit=10)
+    for event in events:
+        try:
+            await dispatch(event)
+            await repo.mark_processed(event.id)
+            await session.commit()
+        except Exception as exc:
+            await session.rollback()
+            await repo.mark_failed(event.id, str(exc))
+            await session.commit()
+```
+
+### Como adicionar um novo tipo de evento (F3 em diante)
+
+1. Adicionar o valor em `OutboxEventType` no `model.py`
+2. Criar (ou adicionar em) um arquivo em `handlers/`
+3. Decorar a função com `@register(OutboxEventType.NOVO_TIPO)`
+4. Importar o módulo no `handlers/__init__.py`
+
+O worker **não precisa de nenhuma alteração**.
+
+### Tipos de evento planejados
+
+| Tipo | Handler | Usado em |
+|------|---------|----------|
+| `USER_INVITE` | e-mail | F1 |
+| `PASSWORD_RESET` | e-mail | F1 |
+| `CERTIFICATE_EMIT` | Celery task `generate_certificate_pdf` | F3 |
+| `CERTIFICATE_REVOKE` | Celery task `revoke_certificate_pdf` + e-mail | F3 |
+| `STANDARD_EXPIRY_ALERT` | e-mail ao responsável do laboratório | F5 |
+| `INSTRUMENT_EXPIRY_ALERT` | e-mail ao cliente | F5 |
+| `QUOTATION_SENT` | e-mail ao cliente com PDF | F4 |
+
+### Garantias
+
+- **At-least-once delivery:** o evento só é marcado `PROCESSED` após o handler retornar sem exceção.
+- **Idempotência em Celery tasks:** `task_id=str(event.idempotency_key)` garante que reenvios do mesmo evento não criem execuções duplicadas.
+- **Skip_locked:** o `SELECT ... FOR UPDATE SKIP LOCKED` no repositório garante que múltiplos workers não processem o mesmo evento simultaneamente.
+- **Max attempts:** após `max_attempts` falhas consecutivas o evento vai para `FAILED` e para de ser reprocessado automaticamente.
+
+### Entregáveis F1.5
+
+- `app/domains/outbox/dispatcher.py` — registry + `dispatch()`
+- `app/domains/outbox/handlers/__init__.py` — ponto de importação centralizado
+- `app/domains/outbox/handlers/auth.py` — migração do código atual
+- `app/core/celery.py` — worker genérico (remove o `if/elif`)
+- Testes unitários do dispatcher (mock dos handlers)
+- Teste de integração: evento desconhecido levanta `ValueError`
 
 ---
 
@@ -527,6 +683,11 @@ f1-tenant-provisioning
       └── f1-user-management depende de f1-auth-jwt
           └── f1-rbac depende de f1-auth-jwt
 
+f1-outbox-dispatcher
+  └── depende de f1-user-management (migra handlers existentes)
+  └── f3-certificate-emission depende de f1-outbox-dispatcher
+  └── f5-standard-alerts depende de f1-outbox-dispatcher
+
 f2-standards
   └── f2-calibration-core depende de f2-standards + f2-clients-instruments
 
@@ -562,6 +723,7 @@ f8-excel-base-workbook
 |------|----------|--------------------|---------------|
 | F0 | 1 | — | — |
 | F1 | 4 | H01–H04 | S01, S02, S40 |
+| F1.5 | 1 | — (infra transversal) | — |
 | F2 | 4 | H05–H14 | S05–S09, S19–S21, S26–S31 |
 | F3 | 2 | H15–H16 | Aba Certificado no S06 |
 | F4 | 6 | H17–H23, H78–H87 | S10–S18, S24–S25 |
@@ -569,4 +731,4 @@ f8-excel-base-workbook
 | F6 | 3 | H30–H33 | S41–S45 |
 | F7 | 3 | H34–H37 | S46–S48 |
 | F8 | 5 | H88–H93 | Aba Planilha no S06 |
-| **Total** | **32** | **~60 histórias** | **~48 telas** |
+| **Total** | **33** | **~60 histórias** | **~48 telas** |

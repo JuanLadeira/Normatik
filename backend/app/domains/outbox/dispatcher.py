@@ -1,9 +1,8 @@
 from collections.abc import Awaitable, Callable
-from typing import TypeAlias
 
 from app.domains.outbox.model import OutboxEvent, OutboxEventType
 
-Handler: TypeAlias = Callable[[OutboxEvent], Awaitable[None]]
+type Handler = Callable[[OutboxEvent], Awaitable[None]]
 
 _registry: dict[OutboxEventType, Handler] = {}
 

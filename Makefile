@@ -3,7 +3,7 @@
 
 # Variáveis
 DC      = docker compose
-DC_PROD = docker compose -f docker-compose.prod.yml
+DC_PROD = docker compose --env-file .env.prod -f docker-compose.prod.yml
 APP_SERVICE = api
 
 help: ## Mostra esta ajuda

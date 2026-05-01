@@ -24,10 +24,10 @@ jobs:
             git pull origin main
 
             echo "==> Rebuilding imagens..."
-            docker compose -f docker-compose.prod.yml build
+            docker compose --env-file .env.prod -f docker-compose.prod.yml build
 
             echo "==> Subindo containers..."
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --remove-orphans
 
             echo "==> Limpando imagens antigas..."
             docker image prune -f

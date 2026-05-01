@@ -21,8 +21,8 @@ COPY backend/app/ ./app/
 COPY backend/alembic/ ./alembic/
 COPY backend/alembic.ini ./
 
-# Sincroniza o projeto final (incluindo dev para testes)
-RUN uv sync
+# Sincroniza o projeto final (incluindo dependências dev para testes)
+RUN uv sync --extra dev
 
 # Copia o entrypoint da pasta de composição
 COPY compose/dev/api/entrypoint.sh /entrypoint.sh

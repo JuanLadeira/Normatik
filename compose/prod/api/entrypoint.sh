@@ -1,163 +1,90 @@
 #!/bin/bash
 set -e
 
-if [ "${SKIP_MIGRATIONS:-false}" = "true" ]; then
-  echo "[entrypoint] SKIP_MIGRATIONS=true — pulando migrações e seed."
-  exec "$@"
-fi
-
 echo "[entrypoint] Rodando migrações Alembic..."
 uv run alembic upgrade head
 echo "[entrypoint] Migrações aplicadas."
 
-echo "[entrypoint] Executando seed de dados iniciais..."
-
+echo "[entrypoint] Rodando seed inicial..."
 uv run python -c "
-import asyncio, sys
-sys.path.insert(0, '/app/src')
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+import asyncio
 from sqlalchemy import select
-from app.database import Base
-from app.tenant.models import Tenant
-from app.usuario.models import Usuario, UsuarioRole
-from app.telegram.models import TelegramInstancia  # noqa
-from app.whatsapp.models import WhatsappInstancia  # noqa
-from app.atendimento.models import Atendimento, MensagemAtendimento, Contato  # noqa
-from app.mcp_server.models import McpServer, McpTool  # noqa
-from app.agente.models import Agente, Documento  # noqa
-from app.admin.models import Admin  # noqa
-from app.system_config.models import SystemConfig  # noqa
-from app.agente.defaults import AGENTES_PADRAO
-from app.auth.security import get_password_hash
-from app.settings import Settings
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from app.core.settings import settings
+from app.core.security import get_password_hash
+from app.core.database import Base
 
-settings = Settings()
-username = settings.ADMIN_DEFAULT_USERNAME
-password = settings.ADMIN_DEFAULT_PASSWORD
+from app.domains.plans.model import Plan
+from app.domains.tenants.model import Tenant, TenantStatus
+from app.domains.users.model import User, UserRole
+from app.domains.subscriptions.model import Subscription
+from app.domains.admin.model import Admin
 
 async def main():
-    engine = create_async_engine(settings.DOCAGENT_DB_URL)
-    SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+    engine = create_async_engine(settings.DATABASE_URL)
+    Session = async_sessionmaker(engine, expire_on_commit=False)
 
-    async with SessionLocal() as session:
+    async with Session() as session:
         async with session.begin():
-            result = await session.execute(select(Usuario).where(Usuario.username == username))
-            existing = result.scalar_one_or_none()
-            if existing:
-                print(f'[entrypoint] Usuário {username!r} já existe, pulando seed de usuário.')
+            result = await session.execute(
+                select(Admin).where(Admin.username == settings.ADMIN_DEFAULT_USERNAME)
+            )
+            admin = result.scalar_one_or_none()
+
+            if not admin:
+                session.add(Admin(
+                    username=settings.ADMIN_DEFAULT_USERNAME,
+                    email=settings.OWNER_EMAIL,
+                    password=get_password_hash(settings.ADMIN_DEFAULT_PASSWORD),
+                    nome='Super Administrador',
+                    ativo=True,
+                ))
+                print(f'[seed] Admin {settings.ADMIN_DEFAULT_USERNAME!r} criado.')
             else:
-                tenant = Tenant(nome='Admin Tenant', descricao='Tenant padrão')
+                admin.password = get_password_hash(settings.ADMIN_DEFAULT_PASSWORD)
+                admin.email = settings.OWNER_EMAIL
+                print(f'[seed] Admin {settings.ADMIN_DEFAULT_USERNAME!r} atualizado.')
+
+            result = await session.execute(
+                select(Tenant).where(Tenant.slug == settings.OWNER_TENANT_SLUG)
+            )
+            tenant = result.scalar_one_or_none()
+
+            if not tenant:
+                tenant = Tenant(
+                    nome=settings.OWNER_TENANT_NAME,
+                    slug=settings.OWNER_TENANT_SLUG,
+                    email_gestor=settings.OWNER_EMAIL,
+                    status=TenantStatus.active,
+                )
                 session.add(tenant)
                 await session.flush()
+                print(f'[seed] Tenant {settings.OWNER_TENANT_SLUG!r} criado.')
 
-                user = Usuario(
-                    username=username,
-                    email=f'{username}@app.com',
-                    password=get_password_hash(password),
-                    nome='Administrador',
-                    ativo=True,
-                    role=UsuarioRole.OWNER,
+            result = await session.execute(
+                select(User).where(User.email == settings.OWNER_EMAIL)
+            )
+            user = result.scalar_one_or_none()
+
+            if not user:
+                session.add(User(
+                    email=settings.OWNER_EMAIL,
+                    password=get_password_hash(settings.OWNER_PASSWORD),
+                    nome='Dono do Laboratório',
+                    role=UserRole.admin,
                     tenant_id=tenant.id,
-                )
-                session.add(user)
-                await session.flush()
-                print(f'[entrypoint] Usuário {username!r} criado (tenant_id={tenant.id}).')
-
-    # Seed admin global (sys-mgmt)
-    async with SessionLocal() as session:
-        async with session.begin():
-            result = await session.execute(select(Admin).where(Admin.username == username))
-            existing_admin = result.scalar_one_or_none()
-            if existing_admin:
-                print('[entrypoint] Admin ' + repr(username) + ' já existe, pulando seed de admin.')
+                    is_active=True,
+                ))
+                print(f'[seed] Usuário {settings.OWNER_EMAIL!r} criado.')
             else:
-                admin = Admin(
-                    username=username,
-                    email=username + '@app.com',
-                    password=get_password_hash(password),
-                    nome='Administrador',
-                    ativo=True,
-                )
-                session.add(admin)
-                await session.flush()
-                print('[entrypoint] Admin ' + repr(username) + ' criado.')
-
-    # Seed agentes padrão — upsert por nome para cada tenant
-    # Garante que novos agentes adicionados ao catálogo cheguem a todos os tenants existentes
-    async with SessionLocal() as session:
-        async with session.begin():
-            tenant_result = await session.execute(select(Tenant).order_by(Tenant.id))
-            for tenant in tenant_result.scalars().all():
-                nomes_result = await session.execute(
-                    select(Agente.nome).where(Agente.tenant_id == tenant.id)
-                )
-                nomes_existentes = {row[0] for row in nomes_result.all()}
-                criados = 0
-                for dados in AGENTES_PADRAO:
-                    if dados['nome'] not in nomes_existentes:
-                        session.add(Agente(**dados, tenant_id=tenant.id))
-                        criados += 1
-                if criados:
-                    print('[entrypoint] ' + str(criados) + ' agente(s) padrão adicionado(s) ao tenant_id=' + str(tenant.id))
-
-    # Seed system config — garante que llm_mode existe com padrão 'local'
-    async with SessionLocal() as session:
-        async with session.begin():
-            result = await session.execute(select(SystemConfig).where(SystemConfig.key == 'llm_mode'))
-            if not result.scalar_one_or_none():
-                session.add(SystemConfig(key='llm_mode', value='local'))
-                print('[entrypoint] SystemConfig llm_mode=local criado.')
-
-    # Seed servidores MCP — upsert por nome (adiciona novos, não sobrescreve existentes)
-    servidores_exemplo = [
-        dict(
-            nome='Fetch',
-            descricao='Busca e converte o conteúdo de qualquer URL para texto. Requer uvx (uv).',
-            command='uvx',
-            args=['mcp-server-fetch'],
-            env={},
-        ),
-        dict(
-            nome='Memory',
-            descricao='Grafo de conhecimento persistente: o agente pode salvar e recuperar fatos entre conversas. Requer Node.js.',
-            command='npx',
-            args=['-y', '@modelcontextprotocol/server-memory'],
-            env={},
-        ),
-        dict(
-            nome='Time',
-            descricao='Fornece data/hora atual e conversão de fusos horários. Requer Node.js.',
-            command='npx',
-            args=['-y', '@modelcontextprotocol/server-time'],
-            env={},
-        ),
-        dict(
-            nome='Puppeteer',
-            descricao='Automação de browser real: navega páginas, clica, extrai conteúdo e tira screenshots. Requer Node.js e Chromium.',
-            command='npx',
-            args=['-y', '@modelcontextprotocol/server-puppeteer'],
-            env={},
-        ),
-        dict(
-            nome='Clima (Open-Meteo)',
-            descricao='Previsão do tempo em tempo real para qualquer cidade. Gratuito, sem chave de API. Dados atualizados a cada hora.',
-            command='uv',
-            args=['run', 'python', '/app/mcp_servers/weather.py'],
-            env={},
-        ),
-    ]
-    async with SessionLocal() as session:
-        async with session.begin():
-            for dados in servidores_exemplo:
-                existe = await session.execute(
-                    select(McpServer).where(McpServer.nome == dados['nome'])
-                )
-                if not existe.scalar_one_or_none():
-                    session.add(McpServer(**dados, ativo=False))
-                    print('[entrypoint] Servidor MCP criado: ' + dados['nome'])
+                user.password = get_password_hash(settings.OWNER_PASSWORD)
+                user.tenant_id = tenant.id
+                user.is_active = True
+                print(f'[seed] Usuário {settings.OWNER_EMAIL!r} atualizado.')
 
 asyncio.run(main())
 "
+echo "[entrypoint] Seed concluído."
 
-echo "[entrypoint] Pronto. Iniciando servidor..."
+echo "[entrypoint] Iniciando servidor..."
 exec "$@"

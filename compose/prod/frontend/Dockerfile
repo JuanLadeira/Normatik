@@ -1,18 +1,24 @@
-# Stage 1: build the Vue SPA
-FROM node:20-alpine AS builder
+# ── Stage 1: Flutter build ────────────────────────────────────────────────────
+FROM ghcr.io/cirruslabs/flutter:stable AS builder
+
+ARG API_URL=https://api.z3ndocs.uk
 
 WORKDIR /app
 
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+# Copia pacotes do monorepo antes para resolver path dependencies
+COPY frontend/packages/ frontend/packages/
+COPY frontend/apps/lab_app/ frontend/apps/lab_app/
 
-COPY frontend/ .
-RUN npm run build
+WORKDIR /app/frontend/apps/lab_app
 
-# Stage 2: serve with nginx
+RUN flutter pub get && \
+    flutter build web --release \
+        --dart-define=API_URL=$API_URL
+
+# ── Stage 2: Servir com nginx ─────────────────────────────────────────────────
 FROM nginx:alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/frontend/apps/lab_app/build/web /usr/share/nginx/html
+COPY compose/prod/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

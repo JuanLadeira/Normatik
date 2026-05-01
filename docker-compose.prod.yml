@@ -11,6 +11,26 @@ volumes:
 
 services:
 
+  # ── Frontend (Flutter Web) ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: compose/prod/frontend/Dockerfile
+      args:
+        API_URL: https://api.z3ndocs.uk
+    networks:
+      - traefik_net
+    depends_on:
+      - api
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.normatik-web.rule=Host(`z3ndocs.uk`)
+      - traefik.http.routers.normatik-web.entrypoints=websecure
+      - traefik.http.routers.normatik-web.tls.certresolver=letsencrypt
+      - traefik.http.services.normatik-web.loadbalancer.server.port=80
+      - traefik.docker.network=coracaodemae_traefik_network
+
   # ── API ───────────────────────────────────────────────────────────────────────
   api:
     build:

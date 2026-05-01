@@ -1,7 +1,5 @@
 """Testes unitários do dispatcher de outbox (handler registry)."""
 
-import uuid
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -19,7 +17,9 @@ def isolate_registry():
     _registry.update(snapshot)
 
 
-def _make_event(event_type: OutboxEventType, payload: dict | None = None) -> OutboxEvent:
+def _make_event(
+    event_type: OutboxEventType, payload: dict | None = None
+) -> OutboxEvent:
     return OutboxEvent(
         event_type=event_type,
         payload=payload or {},

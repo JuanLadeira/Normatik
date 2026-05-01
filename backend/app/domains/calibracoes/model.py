@@ -134,14 +134,17 @@ class PontoDeCalibração(Base):
         Suporta calibração simples (só instrumento) e dual (instrumento + padrão).
         A referência é media_padrao quando há leituras do padrão, valor_nominal caso contrário.
         """
-        n_i = len(self.leituras_instrumento)
+        leituras_i = self.leituras_instrumento or []
+        n_i = len(leituras_i)
         if n_i == 0:
             return
 
         # ── Instrumento ───────────────────────────────────────────────────────
-        self.media_instrumento = sum(self.leituras_instrumento) / n_i
+        self.media_instrumento = sum(leituras_i) / n_i
         if n_i > 1:
-            var_i = sum((x - self.media_instrumento) ** 2 for x in self.leituras_instrumento) / (n_i - 1)
+            var_i = sum((x - self.media_instrumento) ** 2 for x in leituras_i) / (
+                n_i - 1
+            )
             self.desvio_padrao_instrumento = math.sqrt(var_i)
             self.u_tipo_a = self.desvio_padrao_instrumento / math.sqrt(n_i)
         else:
@@ -149,15 +152,18 @@ class PontoDeCalibração(Base):
             self.u_tipo_a = 0.0
 
         # ── Padrão (opcional) ─────────────────────────────────────────────────
-        n_p = len(self.leituras_padrao)
+        leituras_p = self.leituras_padrao or []
+        n_p = len(leituras_p)
         self.u_tipo_a_padrao = 0.0
         referencia = self.valor_nominal
 
         if n_p > 0:
-            self.media_padrao = sum(self.leituras_padrao) / n_p
+            self.media_padrao = sum(leituras_p) / n_p
             referencia = self.media_padrao
             if n_p > 1:
-                var_p = sum((x - self.media_padrao) ** 2 for x in self.leituras_padrao) / (n_p - 1)
+                var_p = sum((x - self.media_padrao) ** 2 for x in leituras_p) / (
+                    n_p - 1
+                )
                 self.desvio_padrao_padrao = math.sqrt(var_p)
                 self.u_tipo_a_padrao = self.desvio_padrao_padrao / math.sqrt(n_p)
             else:
@@ -168,6 +174,8 @@ class PontoDeCalibração(Base):
         self.correcao = -self.erro
 
         # ── Incerteza combinada e expandida ───────────────────────────────────
-        soma_b = sum(f.valor_u ** 2 for f in fontes_b)
-        self.u_combinada = math.sqrt(self.u_tipo_a ** 2 + self.u_tipo_a_padrao ** 2 + soma_b)
+        soma_b = sum(f.valor_u**2 for f in fontes_b)
+        self.u_combinada = math.sqrt(
+            self.u_tipo_a**2 + self.u_tipo_a_padrao**2 + soma_b
+        )
         self.u_expandida = self.fator_k * self.u_combinada

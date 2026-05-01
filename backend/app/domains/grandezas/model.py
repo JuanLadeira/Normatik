@@ -24,7 +24,7 @@ class Grandeza(Base):
         lazy="noload",
         cascade="all, delete-orphan",
     )
-    equipamentos: Mapped[list["Equipamento"]] = relationship(  # noqa: F821
+    tipos_equipamento: Mapped[list["TipoEquipamento"]] = relationship(  # noqa: F821
         back_populates="grandeza",
         lazy="noload",
     )

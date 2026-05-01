@@ -15,6 +15,11 @@ from app.domains.plans.router import router as plans_router
 from app.domains.subscriptions.router import router as subscriptions_router
 from app.domains.tenants.router import router as tenants_router
 from app.domains.users.router import router as users_router
+from app.domains.grandezas.router import router as grandezas_router
+from app.domains.clientes.router import router as clientes_router
+from app.domains.equipamentos.router import router as equipamentos_router
+from app.domains.ordens_servico.router import router as os_router
+from app.domains.calibracoes.router import router as calibracoes_router
 
 # Importa todos os models para que o Base.metadata os conheça
 import app.domains.plans.model  # noqa: F401
@@ -62,6 +67,11 @@ app.include_router(plans_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(subscriptions_router)
+app.include_router(grandezas_router)
+app.include_router(clientes_router)
+app.include_router(equipamentos_router)
+app.include_router(os_router)
+app.include_router(calibracoes_router)
 
 
 @app.get("/health")

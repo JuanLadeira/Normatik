@@ -23,7 +23,9 @@ class TipoEquipamento(Base):
     nome: Mapped[str] = mapped_column(String(100), nullable=False)
     ativo: Mapped[bool] = mapped_column(default=True)
 
-    grandeza: Mapped["Grandeza"] = relationship(lazy="selectin")  # noqa: F821
+    grandeza: Mapped["Grandeza"] = relationship(  # noqa: F821
+        back_populates="tipos_equipamento", lazy="selectin"
+    )
     modelos: Mapped[list["ModeloEquipamento"]] = relationship(
         back_populates="tipo_equipamento",
         lazy="noload",
@@ -75,7 +77,9 @@ class ModeloEquipamento(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "tipo_equipamento_id", "fabricante_id", "nome",
+            "tipo_equipamento_id",
+            "fabricante_id",
+            "nome",
             name="uq_modelo_tipo_fabricante_nome",
         ),
     )
@@ -113,7 +117,9 @@ class Equipamento(Base):
     ativo: Mapped[bool] = mapped_column(default=True)
 
     tipo_equipamento: Mapped["TipoEquipamento"] = relationship(lazy="selectin")
-    modelo_equipamento: Mapped["ModeloEquipamento | None"] = relationship(lazy="selectin")
+    modelo_equipamento: Mapped["ModeloEquipamento | None"] = relationship(
+        lazy="selectin"
+    )
     tenant: Mapped["Tenant"] = relationship(lazy="selectin")  # noqa: F821
 
     __mapper_args__ = {
@@ -140,10 +146,10 @@ class Instrumento(Equipamento):
 
 
 class StatusCalibracaoPadrao(enum.StrEnum):
-    EM_DIA            = "em_dia"
+    EM_DIA = "em_dia"
     VENCENDO_EM_BREVE = "vencendo_em_breve"
-    VENCIDO           = "vencido"
-    SEM_CALIBRACAO    = "sem_calibracao"
+    VENCIDO = "vencido"
+    SEM_CALIBRACAO = "sem_calibracao"
 
 
 class PadraoDeCalibração(Equipamento):
@@ -162,16 +168,23 @@ class PadraoDeCalibração(Equipamento):
     # ── Conveniência: estado atual (espelho do último histórico aceito) ────────
     numero_certificado: Mapped[str | None] = mapped_column(String(100), nullable=True)
     data_calibracao: Mapped[date | None] = mapped_column(Date, nullable=True)
-    validade_calibracao: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
-    laboratorio_calibrador: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    validade_calibracao: Mapped[date | None] = mapped_column(
+        Date, nullable=True, index=True
+    )
+    laboratorio_calibrador: Mapped[str | None] = mapped_column(
+        String(200), nullable=True
+    )
     u_expandida_atual: Mapped[float | None] = mapped_column(nullable=True)
 
     # ── Controle de calibração ─────────────────────────────────────────────────
     frequencia_calibracao_dias: Mapped[int | None] = mapped_column(
-        Integer, nullable=True,
+        Integer,
+        nullable=True,
     )
     alerta_dias_antes: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=30,
+        Integer,
+        nullable=False,
+        default=30,
     )
     criterio_aceitacao: Mapped[str | None] = mapped_column(Text, nullable=True)
     u_maximo_aceito: Mapped[float | None] = mapped_column(nullable=True)
@@ -212,7 +225,9 @@ class HistoricoCalibracaoPadrao(Base):
     data_calibracao: Mapped[date] = mapped_column(Date, nullable=False)
     data_vencimento: Mapped[date] = mapped_column(Date, nullable=False)
     numero_certificado: Mapped[str] = mapped_column(String(100), nullable=False)
-    laboratorio_calibrador: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    laboratorio_calibrador: Mapped[str | None] = mapped_column(
+        String(200), nullable=True
+    )
     u_expandida_certificado: Mapped[float | None] = mapped_column(nullable=True)
     aceito: Mapped[bool] = mapped_column(nullable=False, default=True)
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)

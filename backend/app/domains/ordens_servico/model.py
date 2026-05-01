@@ -28,11 +28,10 @@ class OrdemDeServico(Base):
     tenant_id: Mapped[int] = mapped_column(
         ForeignKey("tenants.id"), nullable=False, index=True
     )
+    cliente_id: Mapped[int] = mapped_column(
+        ForeignKey("clientes_laboratorio.id"), nullable=False, index=True
+    )
     numero: Mapped[str] = mapped_column(String(50), nullable=False)
-
-    cliente_nome: Mapped[str] = mapped_column(String(200), nullable=False)
-    cliente_contato: Mapped[str | None] = mapped_column(String(200), nullable=True)
-
     status: Mapped[StatusOS] = mapped_column(nullable=False, default=StatusOS.ABERTA)
 
     data_entrada: Mapped[datetime] = mapped_column(nullable=False)
@@ -42,6 +41,9 @@ class OrdemDeServico(Base):
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     tenant: Mapped["Tenant"] = relationship(lazy="selectin")  # noqa: F821
+    cliente: Mapped["ClienteLaboratorio"] = relationship(  # noqa: F821
+        back_populates="ordens_servico", lazy="selectin"
+    )
     itens: Mapped[list["ItemOS"]] = relationship(
         back_populates="os",
         lazy="noload",
@@ -59,9 +61,8 @@ class ItemOS(Base):
     os_id: Mapped[int] = mapped_column(
         ForeignKey("ordens_servico.id"), nullable=False, index=True
     )
-    equipamento_id: Mapped[int] = mapped_column(
-        ForeignKey("equipamentos.id"), nullable=False, index=True
-    )
+    descricao: Mapped[str] = mapped_column(String(200), nullable=False)
+    quantidade_prevista: Mapped[int] = mapped_column(nullable=False, default=1)
     posicao: Mapped[int] = mapped_column(nullable=False, default=1)
     status: Mapped[StatusItemOS] = mapped_column(
         nullable=False, default=StatusItemOS.AGUARDANDO
@@ -69,9 +70,15 @@ class ItemOS(Base):
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     os: Mapped["OrdemDeServico"] = relationship(back_populates="itens", lazy="selectin")
-    equipamento: Mapped["Equipamento"] = relationship(lazy="selectin")  # noqa: F821
-    servico: Mapped["ServicoDeCalibração | None"] = relationship(  # noqa: F821
+    servicos: Mapped[list["ServicoDeCalibração"]] = relationship(  # noqa: F821
         back_populates="item_os",
         lazy="noload",
-        uselist=False,
+        cascade="all, delete-orphan",
     )
+
+    @property
+    def quantidade_realizada(self) -> int:
+        """Quantidade de serviços já concluídos neste item."""
+        from app.domains.calibracoes.model import StatusServico
+
+        return sum(1 for s in self.servicos if s.status == StatusServico.CONCLUIDO)

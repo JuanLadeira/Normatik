@@ -1,8 +1,8 @@
 """f2_core_metrologico_domain_models
 
-Revision ID: 37b2f9ba02f8
+Revision ID: fa485ee281ae
 Revises: bef60d5ac6a0
-Create Date: 2026-05-01 14:43:58.399269
+Create Date: 2026-05-01 16:04:17.786144
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '37b2f9ba02f8'
+revision: str = 'fa485ee281ae'
 down_revision: Union[str, Sequence[str], None] = 'bef60d5ac6a0'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -175,9 +175,33 @@ def upgrade() -> None:
     sa.Column('data_calibracao', sa.Date(), nullable=True),
     sa.Column('validade_calibracao', sa.Date(), nullable=True),
     sa.Column('laboratorio_calibrador', sa.String(length=200), nullable=True),
+    sa.Column('u_expandida_atual', sa.Float(), nullable=True),
+    sa.Column('frequencia_calibracao_dias', sa.Integer(), nullable=True),
+    sa.Column('alerta_dias_antes', sa.Integer(), nullable=False),
+    sa.Column('criterio_aceitacao', sa.Text(), nullable=True),
+    sa.Column('u_maximo_aceito', sa.Float(), nullable=True),
     sa.ForeignKeyConstraint(['id'], ['equipamentos.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_padroes_calibracao_validade_calibracao'), 'padroes_calibracao', ['validade_calibracao'], unique=False)
+    op.create_table('historico_calibracoes_padrao',
+    sa.Column('padrao_id', sa.Integer(), nullable=False),
+    sa.Column('data_calibracao', sa.Date(), nullable=False),
+    sa.Column('data_vencimento', sa.Date(), nullable=False),
+    sa.Column('numero_certificado', sa.String(length=100), nullable=False),
+    sa.Column('laboratorio_calibrador', sa.String(length=200), nullable=True),
+    sa.Column('u_expandida_certificado', sa.Float(), nullable=True),
+    sa.Column('aceito', sa.Boolean(), nullable=False),
+    sa.Column('observacoes', sa.Text(), nullable=True),
+    sa.Column('arquivo_pdf_url', sa.String(length=500), nullable=True),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['padrao_id'], ['padroes_calibracao.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_historico_calibracoes_padrao_padrao_id'), 'historico_calibracoes_padrao', ['padrao_id'], unique=False)
+    op.create_index('ix_historico_padrao_data', 'historico_calibracoes_padrao', ['padrao_id', 'data_calibracao'], unique=False)
     op.create_table('servicos_calibracao',
     sa.Column('item_os_id', sa.Integer(), nullable=False),
     sa.Column('instrumento_id', sa.Integer(), nullable=True),
@@ -250,6 +274,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_servicos_calibracao_item_os_id'), table_name='servicos_calibracao')
     op.drop_index(op.f('ix_servicos_calibracao_instrumento_id'), table_name='servicos_calibracao')
     op.drop_table('servicos_calibracao')
+    op.drop_index('ix_historico_padrao_data', table_name='historico_calibracoes_padrao')
+    op.drop_index(op.f('ix_historico_calibracoes_padrao_padrao_id'), table_name='historico_calibracoes_padrao')
+    op.drop_table('historico_calibracoes_padrao')
+    op.drop_index(op.f('ix_padroes_calibracao_validade_calibracao'), table_name='padroes_calibracao')
     op.drop_table('padroes_calibracao')
     op.drop_index(op.f('ix_itens_os_os_id'), table_name='itens_os')
     op.drop_table('itens_os')

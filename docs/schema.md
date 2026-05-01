@@ -173,11 +173,44 @@ Table instrumentos {
 
 // Padrão do laboratório — JTI subtable
 Table padroes_calibracao {
-  id                      integer      [pk, ref: > equipamentos.id]
-  numero_certificado      varchar(100)
-  data_calibracao         date
-  validade_calibracao     date
+  id                      integer [pk, ref: > equipamentos.id]
+
+  // Conveniência: espelho do último HistoricoCalibracaoPadrao aceito
+  // Atualizado pelo service em PadraoService.registrar_calibracao()
+  numero_certificado      varchar(100)  [note: 'conveniência — atualizado pelo service']
+  data_calibracao         date          [note: 'conveniência — atualizado pelo service']
+  validade_calibracao     date          [note: 'conveniência — indexed para query do Celery Beat']
+  laboratorio_calibrador  varchar(200)  [note: 'conveniência — atualizado pelo service']
+  u_expandida_atual       float         [note: 'conveniência — U do último certificado aceito; usado para auto-fill de IncertezaBFonte']
+
+  // Controle de calibração
+  frequencia_calibracao_dias  integer [note: 'intervalo em dias (ex: 365 = anual); null = não definido']
+  alerta_dias_antes           integer [not null, default: 30, note: 'N dias antes do vencimento para status vencendo_em_breve']
+  criterio_aceitacao          text    [note: 'descrição narrativa do critério ISO 17025']
+  u_maximo_aceito             float   [note: 'U máxima aceita; service valida automaticamente quando preenchida']
+
+  // status_calibracao: @property Python — em_dia | vencendo_em_breve | vencido | sem_calibracao
+  // Não armazenado; calculado a partir de validade_calibracao e alerta_dias_antes
+}
+
+// Histórico de calibrações externas recebidas por cada padrão
+Table historico_calibracoes_padrao {
+  id                      integer      [pk, increment]
+  padrao_id               integer      [not null, ref: > padroes_calibracao.id]
+  data_calibracao         date         [not null]
+  data_vencimento         date         [not null]
+  numero_certificado      varchar(100) [not null]
   laboratorio_calibrador  varchar(200)
+  u_expandida_certificado float        [note: 'U expandida extraída do certificado']
+  aceito                  boolean      [not null, note: 'atende ao critério de aceitação do padrão?']
+  observacoes             text         [note: 'justificativa de aceite/recusa']
+  arquivo_pdf_url         varchar(500) [note: 'caminho S3 do PDF do certificado']
+  created_at              timestamp
+  updated_at              timestamp
+
+  indexes {
+    (padrao_id, data_calibracao) [name: 'ix_historico_padrao_data']
+  }
 }
 
 // ═══════════════════════════════════════════════════════

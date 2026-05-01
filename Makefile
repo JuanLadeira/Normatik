@@ -1,7 +1,9 @@
-.PHONY: help up down restart logs build shell db-migrate db-seed test clean
+.PHONY: help up down restart logs build shell db-migrate db-seed test clean \
+        prod-up prod-down prod-logs prod-build prod-migrate prod-shell
 
 # Variáveis
-DC = docker compose
+DC      = docker compose
+DC_PROD = docker compose -f docker-compose.prod.yml
 APP_SERVICE = api
 
 help: ## Mostra esta ajuda
@@ -34,12 +36,8 @@ db-makemigrations: ## Gera uma nova migração (uso: make db-makemigrations msg=
 db-seed: ## Executa o script de seed inicial
 	$(DC) exec $(APP_SERVICE) /entrypoint.sh
 
-lint: ## Executa a verificação de lint e formatação (Ruff)
-	$(DC) exec $(APP_SERVICE) /app/.venv/bin/ruff check . --fix
-	$(DC) exec $(APP_SERVICE) /app/.venv/bin/ruff format .
-
-test: lint ## Executa o lint e depois os testes automatizados
-	$(DC) exec $(APP_SERVICE) /app/.venv/bin/python -m pytest
+test: ## Executa os testes automatizados
+	$(DC) exec $(APP_SERVICE) uv run python -m pytest
 
 logs-f: ## Exibe os logs do frontend
 	$(DC) logs -f frontend
@@ -49,3 +47,22 @@ rf: ## Reinicia rapidamente o frontend para aplicar mudanças de código
 
 clean: ## Remove volumes e imagens órfãs
 	$(DC) down -v --remove-orphans
+
+# ── Produção ──────────────────────────────────────────────────────────────────
+prod-up: ## [prod] Sobe os containers de produção
+	$(DC_PROD) up -d
+
+prod-down: ## [prod] Para os containers de produção
+	$(DC_PROD) down
+
+prod-build: ## [prod] Reconstrói as imagens de produção
+	$(DC_PROD) build --no-cache
+
+prod-logs: ## [prod] Exibe os logs de produção
+	$(DC_PROD) logs -f
+
+prod-migrate: ## [prod] Executa migrações em produção
+	$(DC_PROD) exec api uv run alembic upgrade head
+
+prod-shell: ## [prod] Abre shell no container da API em produção
+	$(DC_PROD) exec api /bin/bash

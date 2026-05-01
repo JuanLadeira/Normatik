@@ -15,6 +15,11 @@ from app.domains.tenants.model import Tenant  # noqa: F401
 from app.domains.users.model import User  # noqa: F401
 from app.domains.subscriptions.model import Subscription  # noqa: F401
 from app.domains.admin.model import Admin  # noqa: F401
+from app.domains.outbox.model import OutboxEvent  # noqa: F401
+from app.domains.grandezas.model import Grandeza, TipoIncertezaBTemplate  # noqa: F401
+from app.domains.equipamentos.model import Equipamento  # noqa: F401
+from app.domains.ordens_servico.model import OrdemDeServico, ItemOS  # noqa: F401
+from app.domains.calibracoes.model import ServicoDeCalibração, IncertezaBFonte, PontoDeCalibração  # noqa: F401
 
 config = context.config
 

@@ -23,6 +23,10 @@ import app.domains.users.model  # noqa: F401
 import app.domains.subscriptions.model  # noqa: F401
 import app.domains.admin.model  # noqa: F401
 import app.domains.outbox.model  # noqa: F401
+import app.domains.grandezas.model  # noqa: F401
+import app.domains.equipamentos.model  # noqa: F401
+import app.domains.ordens_servico.model  # noqa: F401
+import app.domains.calibracoes.model  # noqa: F401
 
 
 @asynccontextmanager

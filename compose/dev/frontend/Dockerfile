@@ -20,4 +20,4 @@ COPY frontend/apps/lab_app/ .
 # Expõe a porta
 EXPOSE 3000
 
-CMD ["flutter", "run", "-d", "web-server", "--web-port", "3000", "--web-hostname", "0.0.0.0"]
+CMD ["flutter", "run", "-d", "web-server", "--web-port", "3000", "--web-hostname", "0.0.0.0", "--dart-define=API_URL=http://localhost:8000"]

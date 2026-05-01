@@ -1,41 +1,15 @@
 networks:
-  proxy:      # Traefik + serviços expostos via HTTPS
-    driver: bridge
-  internal:   # Banco, Redis, workers — sem exposição externa
+  traefik_net:             # rede externa do Traefik compartilhado
+    external: true
+    name: coracaodemae_traefik_network
+  internal:                # banco, Redis, workers — sem exposição externa
     driver: bridge
 
 volumes:
   postgres_data:
   minio_data:
-  traefik_certs:
 
 services:
-
-  # ── Traefik ───────────────────────────────────────────────────────────────────
-  traefik:
-    image: traefik:v3.1
-    restart: unless-stopped
-    networks:
-      - proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik_certs:/letsencrypt
-    command:
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=proxy
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-      - --certificatesresolvers.letsencrypt.acme.email=admin@z3ndocs.uk
-      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-      - --log.level=INFO
 
   # ── API ───────────────────────────────────────────────────────────────────────
   api:
@@ -45,7 +19,7 @@ services:
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     env_file: .env.prod
     networks:
-      - proxy
+      - traefik_net
       - internal
     depends_on:
       postgres:
@@ -55,10 +29,11 @@ services:
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.api.rule=Host(`api.z3ndocs.uk`)
-      - traefik.http.routers.api.entrypoints=websecure
-      - traefik.http.routers.api.tls.certresolver=letsencrypt
-      - traefik.http.services.api.loadbalancer.server.port=8000
+      - traefik.http.routers.normatik-api.rule=Host(`api.z3ndocs.uk`)
+      - traefik.http.routers.normatik-api.entrypoints=websecure
+      - traefik.http.routers.normatik-api.tls.certresolver=letsencrypt
+      - traefik.http.services.normatik-api.loadbalancer.server.port=8000
+      - traefik.docker.network=coracaodemae_traefik_network
 
   # ── Celery Worker ─────────────────────────────────────────────────────────────
   celery-worker:
@@ -93,20 +68,20 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
     networks:
-      - proxy
+      - traefik_net
       - internal
     depends_on:
       - redis
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.flower.rule=Host(`flower.z3ndocs.uk`)
-      - traefik.http.routers.flower.entrypoints=websecure
-      - traefik.http.routers.flower.tls.certresolver=letsencrypt
-      - traefik.http.routers.flower.middlewares=flower-auth
-      - traefik.http.services.flower.loadbalancer.server.port=5555
-      # Gerar senha: echo $(htpasswd -nb admin SUA_SENHA) | sed 's/\$/\$\$/g'
-      - "traefik.http.middlewares.flower-auth.basicauth.users=${FLOWER_BASICAUTH}"
+      - traefik.http.routers.normatik-flower.rule=Host(`flower.z3ndocs.uk`)
+      - traefik.http.routers.normatik-flower.entrypoints=websecure
+      - traefik.http.routers.normatik-flower.tls.certresolver=letsencrypt
+      - traefik.http.routers.normatik-flower.middlewares=normatik-flower-auth
+      - traefik.http.services.normatik-flower.loadbalancer.server.port=5555
+      - "traefik.http.middlewares.normatik-flower-auth.basicauth.users=${FLOWER_BASICAUTH}"
+      - traefik.docker.network=coracaodemae_traefik_network
 
   # ── PostgreSQL ────────────────────────────────────────────────────────────────
   postgres:

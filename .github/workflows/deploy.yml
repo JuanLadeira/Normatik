@@ -24,10 +24,16 @@ jobs:
             git pull origin main
 
             echo "==> Rebuilding imagens..."
-            docker compose -f docker-compose.prod.yml build
+            docker compose --env-file .env.prod -f docker-compose.prod.yml build
 
             echo "==> Subindo containers..."
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "==> Aguardando API ficar saudável..."
+            timeout 60 bash -c 'until docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T api uv run alembic current 2>/dev/null; do sleep 3; done'
+
+            echo "==> Rodando migrações..."
+            docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T api uv run alembic upgrade head
 
             echo "==> Limpando imagens antigas..."
             docker image prune -f

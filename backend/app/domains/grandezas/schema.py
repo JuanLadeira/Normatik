@@ -22,10 +22,22 @@ class TipoIncertezaBTemplatePublic(TipoIncertezaBTemplateBase):
     grandeza_id: int
 
 
+class UnidadeMedidaCreate(BaseModel):
+    nome: str
+    simbolo: str
+    is_si: bool = False
+
+
+class UnidadeMedidaPublic(UnidadeMedidaCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    grandeza_id: int
+
+
 class GrandezaBase(BaseModel):
     nome: str
     simbolo: str
-    unidade_si: str
 
 
 class GrandezaCreate(GrandezaBase):
@@ -36,4 +48,5 @@ class GrandezaPublic(GrandezaBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    unidades: list[UnidadeMedidaPublic] = []
     tipos_incerteza_b: list[TipoIncertezaBTemplatePublic] = []

@@ -26,6 +26,37 @@ class NormatiqTheme {
         foregroundColor: NormatiqColors.neutral900,
         elevation: 0,
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: NormatiqColors.neutral50,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide: const BorderSide(color: NormatiqColors.neutral300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide: const BorderSide(color: NormatiqColors.neutral300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide:
+              const BorderSide(color: NormatiqColors.primary600, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide: const BorderSide(color: NormatiqColors.danger700),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide:
+              const BorderSide(color: NormatiqColors.danger700, width: 2),
+        ),
+        labelStyle: const TextStyle(color: NormatiqColors.neutral500),
+        floatingLabelStyle: const TextStyle(
+            color: NormatiqColors.primary600, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -67,10 +98,33 @@ class NormatiqTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: darkCard,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(NormatiqRadius.md),
           borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide:
+              const BorderSide(color: NormatiqColors.accent500, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide: const BorderSide(color: NormatiqColors.danger700),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NormatiqRadius.md),
+          borderSide:
+              const BorderSide(color: NormatiqColors.danger700, width: 2),
+        ),
+        labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+        floatingLabelStyle: const TextStyle(
+            color: NormatiqColors.accent500, fontWeight: FontWeight.w600),
       ),
     );
   }

@@ -6,6 +6,8 @@ from app.domains.grandezas.schema import (
     GrandezaPublic,
     TipoIncertezaBTemplateCreate,
     TipoIncertezaBTemplatePublic,
+    UnidadeMedidaCreate,
+    UnidadeMedidaPublic,
 )
 from app.domains.grandezas.service import GrandezaServiceDep
 
@@ -30,6 +32,35 @@ async def create_grandeza(
 ):
     """Cadastra uma nova grandeza (Global)."""
     return await service.create(data)
+
+
+@router.post(
+    "/{grandeza_id}/unidades",
+    response_model=UnidadeMedidaPublic,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_unidade(
+    grandeza_id: int,
+    data: UnidadeMedidaCreate,
+    _: CurrentUser,
+    service: GrandezaServiceDep,
+):
+    """Adiciona uma unidade de medida a uma grandeza."""
+    return await service.add_unidade(grandeza_id, data)
+
+
+@router.delete(
+    "/{grandeza_id}/unidades/{unidade_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_unidade(
+    grandeza_id: int,
+    unidade_id: int,
+    _: CurrentUser,
+    service: GrandezaServiceDep,
+):
+    """Remove uma unidade de medida de uma grandeza."""
+    await service.delete_unidade(grandeza_id, unidade_id)
 
 
 @router.post(

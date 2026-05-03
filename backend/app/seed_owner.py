@@ -6,6 +6,7 @@ from app.core.settings import settings
 from app.core.security import get_password_hash
 
 # IMPORTANTE: Importar todos os models para o SQLAlchemy resolver relacionamentos
+import app._models  # noqa: F401 — resolve todos os relacionamentos do SQLAlchemy
 from app.domains.tenants.model import Tenant, TenantStatus
 from app.domains.users.model import User, UserRole
 from app.domains.admin.model import Admin

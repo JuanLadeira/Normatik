@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import AsyncDBSession
-from app.domains.grandezas.model import Grandeza, TipoIncertezaBTemplate
+from app.domains.grandezas.model import Grandeza, TipoIncertezaBTemplate, UnidadeMedida
+
+
+def _load_grandeza():
+    return selectinload(Grandeza.unidades), selectinload(Grandeza.tipos_incerteza_b)
 
 
 class GrandezaRepository:
@@ -15,9 +19,7 @@ class GrandezaRepository:
 
     async def get_all(self) -> list[Grandeza]:
         result = await self._session.execute(
-            select(Grandeza)
-            .options(selectinload(Grandeza.tipos_incerteza_b))
-            .order_by(Grandeza.nome)
+            select(Grandeza).options(*_load_grandeza()).order_by(Grandeza.nome)
         )
         return list(result.scalars().all())
 
@@ -25,22 +27,20 @@ class GrandezaRepository:
         result = await self._session.execute(
             select(Grandeza)
             .where(Grandeza.id == grandeza_id)
-            .options(selectinload(Grandeza.tipos_incerteza_b))
+            .options(*_load_grandeza())
         )
         return result.scalar_one_or_none()
 
     async def get_by_nome(self, nome: str) -> Grandeza | None:
         result = await self._session.execute(
-            select(Grandeza)
-            .where(Grandeza.nome == nome)
-            .options(selectinload(Grandeza.tipos_incerteza_b))
+            select(Grandeza).where(Grandeza.nome == nome).options(*_load_grandeza())
         )
         return result.scalar_one_or_none()
 
     async def save(self, grandeza: Grandeza) -> Grandeza:
         self._session.add(grandeza)
         await self._session.flush()
-        await self._session.refresh(grandeza)
+        await self._session.refresh(grandeza, ["unidades", "tipos_incerteza_b"])
         return grandeza
 
     async def delete(self, grandeza: Grandeza) -> None:
@@ -54,6 +54,22 @@ class GrandezaRepository:
         await self._session.flush()
         await self._session.refresh(template)
         return template
+
+    async def add_unidade(self, unidade: UnidadeMedida) -> UnidadeMedida:
+        self._session.add(unidade)
+        await self._session.flush()
+        await self._session.refresh(unidade)
+        return unidade
+
+    async def get_unidade_by_id(self, unidade_id: int) -> UnidadeMedida | None:
+        result = await self._session.execute(
+            select(UnidadeMedida).where(UnidadeMedida.id == unidade_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def delete_unidade(self, unidade: UnidadeMedida) -> None:
+        await self._session.delete(unidade)
+        await self._session.flush()
 
 
 def get_grandeza_repository(session: AsyncDBSession) -> GrandezaRepository:

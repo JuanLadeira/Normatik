@@ -2,16 +2,21 @@ from fastapi import APIRouter, status
 
 from app.auth.dependencies import CurrentUser
 from app.domains.equipamentos.schema import (
+    FabricanteCreate,
     FabricantePublic,
     HistoricoCalibracaoPadraoCreate,
     HistoricoCalibracaoPadraoPublic,
+    HistoricoCalibracaoPadraoUpdate,
     InstrumentoCreate,
     InstrumentoPublic,
     InstrumentoUpdate,
+    ModeloEquipamentoCreate,
     ModeloEquipamentoPublic,
+    ModeloEquipamentoUpdate,
     PadraoCreate,
     PadraoPublic,
     PadraoUpdate,
+    TipoEquipamentoCreate,
     TipoEquipamentoPublic,
 )
 from app.domains.equipamentos.service import EquipamentoServiceDep
@@ -30,10 +35,30 @@ async def list_tipos(
     return await service.get_tipos_equipamento(grandeza_id)
 
 
+@router.post(
+    "/tipos", response_model=TipoEquipamentoPublic, status_code=status.HTTP_201_CREATED
+)
+async def create_tipo(
+    data: TipoEquipamentoCreate, service: EquipamentoServiceDep, _: CurrentUser
+):
+    """Cadastra um novo tipo de equipamento."""
+    return await service.create_tipo_equipamento(data)
+
+
 @router.get("/fabricantes", response_model=list[FabricantePublic])
 async def list_fabricantes(service: EquipamentoServiceDep, _: CurrentUser):
     """Lista fabricantes de equipamentos."""
     return await service.get_fabricantes()
+
+
+@router.post(
+    "/fabricantes", response_model=FabricantePublic, status_code=status.HTTP_201_CREATED
+)
+async def create_fabricante(
+    data: FabricanteCreate, service: EquipamentoServiceDep, _: CurrentUser
+):
+    """Cadastra um novo fabricante."""
+    return await service.create_fabricante(data)
 
 
 @router.get("/modelos", response_model=list[ModeloEquipamentoPublic])
@@ -45,6 +70,35 @@ async def list_modelos(
 ):
     """Lista modelos de equipamentos."""
     return await service.get_modelos(tipo_id, fabricante_id)
+
+
+@router.post(
+    "/modelos",
+    response_model=ModeloEquipamentoPublic,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_modelo(
+    data: ModeloEquipamentoCreate, service: EquipamentoServiceDep, _: CurrentUser
+):
+    """Cadastra um novo modelo de equipamento."""
+    return await service.create_modelo_equipamento(data)
+
+
+@router.patch("/modelos/{id}", response_model=ModeloEquipamentoPublic)
+async def update_modelo(
+    id: int,
+    data: ModeloEquipamentoUpdate,
+    service: EquipamentoServiceDep,
+    _: CurrentUser,
+):
+    """Atualiza um modelo de equipamento."""
+    return await service.update_modelo_equipamento(id, data)
+
+
+@router.delete("/modelos/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_modelo(id: int, service: EquipamentoServiceDep, _: CurrentUser):
+    """Remove um modelo do catálogo."""
+    await service.delete_modelo(id)
 
 
 # ── Instrumentos ──────────────────────────────────────────────────────────────
@@ -168,3 +222,33 @@ async def list_historico_padrao(
 ):
     """Lista histórico de calibracoes externas de um padrão."""
     return await service.get_historico_padrao(current_user.tenant_id, id)
+
+
+@router.patch(
+    "/padroes/{id}/calibracoes/{historico_id}",
+    response_model=HistoricoCalibracaoPadraoPublic,
+)
+async def update_historico_padrao(
+    id: int,
+    historico_id: int,
+    data: HistoricoCalibracaoPadraoUpdate,
+    current_user: CurrentUser,
+    service: EquipamentoServiceDep,
+):
+    """Atualiza um registro de calibração de um padrão."""
+    return await service.update_historico_padrao(
+        current_user.tenant_id, id, historico_id, data
+    )
+
+
+@router.delete(
+    "/padroes/{id}/calibracoes/{historico_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_historico_padrao(
+    id: int,
+    historico_id: int,
+    current_user: CurrentUser,
+    service: EquipamentoServiceDep,
+):
+    """Remove um registro de calibração de um padrão."""
+    await service.delete_historico_padrao(current_user.tenant_id, id, historico_id)

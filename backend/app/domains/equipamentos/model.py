@@ -1,10 +1,20 @@
 import enum
 from datetime import date, timedelta
 
-from sqlalchemy import Date, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Date,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.domains.grandezas.model import UnidadeMedida  # noqa: F401
 
 
 class TipoEquipamento(Base):
@@ -107,13 +117,11 @@ class Equipamento(Base):
         ForeignKey("modelos_equipamento.id"), nullable=True, index=True
     )
 
+    tag: Mapped[str | None] = mapped_column(String(100), nullable=True)
     numero_serie: Mapped[str] = mapped_column(String(100), nullable=False)
     marca: Mapped[str] = mapped_column(String(100), nullable=False)
     modelo: Mapped[str] = mapped_column(String(100), nullable=False)
-    unidade: Mapped[str] = mapped_column(String(20), nullable=False)
-
-    capacidade: Mapped[float | None] = mapped_column(nullable=True)
-    resolucao: Mapped[float | None] = mapped_column(nullable=True)
+    fotos: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     ativo: Mapped[bool] = mapped_column(default=True)
 
     tipo_equipamento: Mapped["TipoEquipamento"] = relationship(lazy="selectin")
@@ -121,11 +129,44 @@ class Equipamento(Base):
         lazy="selectin"
     )
     tenant: Mapped["Tenant"] = relationship(lazy="selectin")  # noqa: F821
+    faixas: Mapped[list["FaixaMedicao"]] = relationship(
+        back_populates="equipamento",
+        lazy="noload",
+        cascade="all, delete-orphan",
+        order_by="FaixaMedicao.posicao",
+    )
 
     __mapper_args__ = {
         "polymorphic_on": "tipo",
         "polymorphic_identity": "equipamento",
     }
+
+
+class FaixaMedicao(Base):
+    """Faixa de medição de um equipamento (ex: 0–150 mm, resolução 0,01 mm).
+
+    Substitui os campos flat unidade/capacidade/resolucao do Equipamento,
+    permitindo múltiplas faixas com unidades distintas (ex: multímetro com
+    faixas em mV, V, kV).
+    """
+
+    __tablename__ = "faixas_medicao"
+
+    equipamento_id: Mapped[int] = mapped_column(
+        ForeignKey("equipamentos.id"), nullable=False, index=True
+    )
+    unidade_id: Mapped[int] = mapped_column(
+        ForeignKey("unidades_medida.id"), nullable=False
+    )
+    valor_min: Mapped[float | None] = mapped_column(nullable=True)
+    valor_max: Mapped[float | None] = mapped_column(nullable=True)
+    resolucao: Mapped[float | None] = mapped_column(nullable=True)
+    posicao: Mapped[int] = mapped_column(nullable=False, default=1)
+
+    equipamento: Mapped["Equipamento"] = relationship(
+        back_populates="faixas", lazy="noload"
+    )
+    unidade: Mapped["UnidadeMedida"] = relationship(lazy="selectin")
 
 
 class Instrumento(Equipamento):
@@ -219,6 +260,7 @@ class HistoricoCalibracaoPadrao(Base):
 
     __tablename__ = "historico_calibracoes_padrao"
 
+    id: Mapped[int] = mapped_column(primary_key=True)
     padrao_id: Mapped[int] = mapped_column(
         ForeignKey("padroes_calibracao.id"), nullable=False, index=True
     )
@@ -239,4 +281,7 @@ class HistoricoCalibracaoPadrao(Base):
 
     __table_args__ = (
         Index("ix_historico_padrao_data", "padrao_id", "data_calibracao"),
+        UniqueConstraint(
+            "padrao_id", "numero_certificado", name="uq_historico_padrao_certificado"
+        ),
     )

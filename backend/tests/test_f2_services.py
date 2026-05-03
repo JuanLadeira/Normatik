@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from datetime import date, timedelta
 
@@ -28,7 +30,7 @@ async def grandeza_pressao(db_session):
     from app.domains.grandezas.model import Grandeza
 
     repo = GrandezaRepository(db_session)
-    g = Grandeza(nome="Pressão", simbolo="P", unidade_si="Pa")
+    g = Grandeza(nome=f"Pressão-{uuid.uuid4().hex[:8]}", simbolo="P")
     return await repo.save(g)
 
 
@@ -78,7 +80,7 @@ async def test_equipamento_service_registrar_calibracao(db_session, admin_user):
     service = EquipamentoService(repo)
 
     # Setup: Grandeza e Tipo
-    g = Grandeza(nome="Massa", simbolo="g", unidade_si="kg")
+    g = Grandeza(nome=f"Massa-{uuid.uuid4().hex[:8]}", simbolo="g")
     db_session.add(g)
     await db_session.flush()
 
@@ -92,7 +94,6 @@ async def test_equipamento_service_registrar_calibracao(db_session, admin_user):
         numero_serie="SN001",
         marca="Toledo",
         modelo="M1",
-        unidade="g",
         alerta_dias_antes=30,
     )
     padrao = await service.create_padrao(tenant_id, padrao_data)
@@ -133,7 +134,7 @@ async def test_calibracao_service_recalculo_automatico(db_session, admin_user):
     db_session.add(cliente)
     await db_session.flush()
 
-    g = Grandeza(nome="Temperatura", simbolo="C", unidade_si="K")
+    g = Grandeza(nome=f"Temperatura-{uuid.uuid4().hex[:8]}", simbolo="C")
     db_session.add(g)
     await db_session.flush()
 

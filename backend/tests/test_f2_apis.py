@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 
 
@@ -5,8 +7,9 @@ import pytest
 async def test_grandezas_api_flow(client, admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
 
-    # 1. Criar Grandeza
-    data = {"nome": "Comprimento", "simbolo": "L", "unidade_si": "m"}
+    # 1. Criar Grandeza (nome único para evitar colisão com runs anteriores)
+    nome_unico = f"Comprimento-{uuid.uuid4().hex[:8]}"
+    data = {"nome": nome_unico, "simbolo": "L"}
     response = await client.post("/api/grandezas/", json=data, headers=headers)
     assert response.status_code == 201
     grandeza_id = response.json()["id"]
@@ -14,7 +17,7 @@ async def test_grandezas_api_flow(client, admin_token):
     # 2. Listar Grandezas
     r_list = await client.get("/api/grandezas/", headers=headers)
     assert response.status_code == 201
-    assert any(g["nome"] == "Comprimento" for g in r_list.json())
+    assert any(g["nome"] == nome_unico for g in r_list.json())
 
     # 3. Adicionar Template B
     template_data = {

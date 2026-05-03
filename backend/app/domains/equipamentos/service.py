@@ -156,7 +156,7 @@ class EquipamentoService:
         self, tenant_id: int, instrumento_id: int, data: InstrumentoUpdate
     ) -> Instrumento:
         instr = await self.get_instrumento_by_id(tenant_id, instrumento_id)
-        
+
         # Se mudar marca/modelo/tipo, podemos precisar atualizar o catálogo ou o ID do modelo
         if (data.marca or data.modelo or data.tipo_equipamento_id) and not data.modelo_equipamento_id:
             tipo_id = data.tipo_equipamento_id or instr.tipo_equipamento_id
@@ -238,7 +238,7 @@ class EquipamentoService:
         self, tenant_id: int, padrao_id: int, data: HistoricoCalibracaoPadraoCreate
     ) -> HistoricoCalibracaoPadrao:
         padrao = await self.get_padrao_by_id(tenant_id, padrao_id)
-        
+
         # Validação: Impedir duplicidade de certificado para o mesmo padrão
         historico_existente = await self.repo.get_historico_padrao_by_certificado(
             padrao.id, data.numero_certificado
@@ -259,7 +259,7 @@ class EquipamentoService:
     ) -> HistoricoCalibracaoPadrao:
         padrao = await self.get_padrao_by_id(tenant_id, padrao_id)
         historico = await self.repo.get_historico_padrao_by_id(historico_id)
-        
+
         if not historico or historico.padrao_id != padrao.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -278,7 +278,7 @@ class EquipamentoService:
 
         for key, value in data.model_dump(exclude_unset=True).items():
             setattr(historico, key, value)
-        
+
         await self.repo.save(historico)
         await self._refresh_padrao_mirror(padrao)
         return historico
@@ -286,7 +286,7 @@ class EquipamentoService:
     async def delete_historico_padrao(self, tenant_id: int, padrao_id: int, historico_id: int) -> None:
         padrao = await self.get_padrao_by_id(tenant_id, padrao_id)
         historico = await self.repo.get_historico_padrao_by_id(historico_id)
-        
+
         if not historico or historico.padrao_id != padrao.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -320,7 +320,7 @@ class EquipamentoService:
             padrao.validade_calibracao = mais_recente.data_vencimento
             padrao.laboratorio_calibrador = mais_recente.laboratorio_calibrador
             padrao.u_expandida_atual = mais_recente.u_expandida_certificado
-        
+
         await self.repo.save(padrao)
 
     # ── Helpers ───────────────────────────────────────────────────────────────

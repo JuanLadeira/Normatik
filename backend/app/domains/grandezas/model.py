@@ -47,7 +47,9 @@ class UnidadeMedida(Base):
     simbolo: Mapped[str] = mapped_column(String(20), nullable=False)
     is_si: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    grandeza: Mapped["Grandeza"] = relationship(back_populates="unidades", lazy="selectin")
+    grandeza: Mapped["Grandeza"] = relationship(
+        back_populates="unidades", lazy="selectin"
+    )
 
 
 class TipoIncertezaBTemplate(Base):

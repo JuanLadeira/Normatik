@@ -35,7 +35,9 @@ async def list_tipos(
     return await service.get_tipos_equipamento(grandeza_id)
 
 
-@router.post("/tipos", response_model=TipoEquipamentoPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tipos", response_model=TipoEquipamentoPublic, status_code=status.HTTP_201_CREATED
+)
 async def create_tipo(
     data: TipoEquipamentoCreate, service: EquipamentoServiceDep, _: CurrentUser
 ):
@@ -49,7 +51,9 @@ async def list_fabricantes(service: EquipamentoServiceDep, _: CurrentUser):
     return await service.get_fabricantes()
 
 
-@router.post("/fabricantes", response_model=FabricantePublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/fabricantes", response_model=FabricantePublic, status_code=status.HTTP_201_CREATED
+)
 async def create_fabricante(
     data: FabricanteCreate, service: EquipamentoServiceDep, _: CurrentUser
 ):
@@ -68,7 +72,11 @@ async def list_modelos(
     return await service.get_modelos(tipo_id, fabricante_id)
 
 
-@router.post("/modelos", response_model=ModeloEquipamentoPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/modelos",
+    response_model=ModeloEquipamentoPublic,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_modelo(
     data: ModeloEquipamentoCreate, service: EquipamentoServiceDep, _: CurrentUser
 ):
@@ -91,7 +99,6 @@ async def update_modelo(
 async def delete_modelo(id: int, service: EquipamentoServiceDep, _: CurrentUser):
     """Remove um modelo do catálogo."""
     await service.delete_modelo(id)
-
 
 
 # ── Instrumentos ──────────────────────────────────────────────────────────────

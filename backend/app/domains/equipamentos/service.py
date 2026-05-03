@@ -158,13 +158,19 @@ class EquipamentoService:
         instr = await self.get_instrumento_by_id(tenant_id, instrumento_id)
 
         # Se mudar marca/modelo/tipo, podemos precisar atualizar o catálogo ou o ID do modelo
-        if (data.marca or data.modelo or data.tipo_equipamento_id) and not data.modelo_equipamento_id:
+        if (
+            data.marca or data.modelo or data.tipo_equipamento_id
+        ) and not data.modelo_equipamento_id:
             tipo_id = data.tipo_equipamento_id or instr.tipo_equipamento_id
             marca = data.marca or instr.marca
             modelo = data.modelo or instr.modelo
-            data.modelo_equipamento_id = await self._ensure_catalog_entry(tipo_id, marca, modelo)
+            data.modelo_equipamento_id = await self._ensure_catalog_entry(
+                tipo_id, marca, modelo
+            )
 
-        for key, value in data.model_dump(exclude_unset=True, exclude={"faixas"}).items():
+        for key, value in data.model_dump(
+            exclude_unset=True, exclude={"faixas"}
+        ).items():
             setattr(instr, key, value)
         await self.repo.save(instr)
         if data.faixas is not None:
@@ -214,13 +220,19 @@ class EquipamentoService:
         padrao = await self.get_padrao_by_id(tenant_id, padrao_id)
 
         # Se mudar marca/modelo/tipo, podemos precisar atualizar o catálogo ou o ID do modelo
-        if (data.marca or data.modelo or data.tipo_equipamento_id) and not data.modelo_equipamento_id:
+        if (
+            data.marca or data.modelo or data.tipo_equipamento_id
+        ) and not data.modelo_equipamento_id:
             tipo_id = data.tipo_equipamento_id or padrao.tipo_equipamento_id
             marca = data.marca or padrao.marca
             modelo = data.modelo or padrao.modelo
-            data.modelo_equipamento_id = await self._ensure_catalog_entry(tipo_id, marca, modelo)
+            data.modelo_equipamento_id = await self._ensure_catalog_entry(
+                tipo_id, marca, modelo
+            )
 
-        for key, value in data.model_dump(exclude_unset=True, exclude={"faixas"}).items():
+        for key, value in data.model_dump(
+            exclude_unset=True, exclude={"faixas"}
+        ).items():
             setattr(padrao, key, value)
         await self.repo.save(padrao)
         if data.faixas is not None:
@@ -255,7 +267,11 @@ class EquipamentoService:
         return historico
 
     async def update_historico_padrao(
-        self, tenant_id: int, padrao_id: int, historico_id: int, data: HistoricoCalibracaoPadraoUpdate
+        self,
+        tenant_id: int,
+        padrao_id: int,
+        historico_id: int,
+        data: HistoricoCalibracaoPadraoUpdate,
     ) -> HistoricoCalibracaoPadrao:
         padrao = await self.get_padrao_by_id(tenant_id, padrao_id)
         historico = await self.repo.get_historico_padrao_by_id(historico_id)
@@ -266,7 +282,10 @@ class EquipamentoService:
                 detail="Registro de calibração não encontrado.",
             )
 
-        if data.numero_certificado and data.numero_certificado != historico.numero_certificado:
+        if (
+            data.numero_certificado
+            and data.numero_certificado != historico.numero_certificado
+        ):
             existente = await self.repo.get_historico_padrao_by_certificado(
                 padrao.id, data.numero_certificado
             )
@@ -283,7 +302,9 @@ class EquipamentoService:
         await self._refresh_padrao_mirror(padrao)
         return historico
 
-    async def delete_historico_padrao(self, tenant_id: int, padrao_id: int, historico_id: int) -> None:
+    async def delete_historico_padrao(
+        self, tenant_id: int, padrao_id: int, historico_id: int
+    ) -> None:
         padrao = await self.get_padrao_by_id(tenant_id, padrao_id)
         historico = await self.repo.get_historico_padrao_by_id(historico_id)
 

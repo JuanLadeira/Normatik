@@ -18,15 +18,11 @@ from app.domains.equipamentos.model import (
 
 
 def _load_equipamento():
-    return (
-        selectinload(Instrumento.faixas).selectinload(FaixaMedicao.unidade),
-    )
+    return (selectinload(Instrumento.faixas).selectinload(FaixaMedicao.unidade),)
 
 
 def _load_padrao():
-    return (
-        selectinload(PadraoDeCalibração.faixas).selectinload(FaixaMedicao.unidade),
-    )
+    return (selectinload(PadraoDeCalibração.faixas).selectinload(FaixaMedicao.unidade),)
 
 
 class EquipamentoRepository:

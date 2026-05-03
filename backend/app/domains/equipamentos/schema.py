@@ -73,6 +73,7 @@ class ModeloEquipamentoBase(BaseModel):
 
 class ModeloEquipamentoPublicMinimal(ModeloEquipamentoBase):
     """Modelo usado dentro da listagem de tipos (sem o objeto tipo_equipamento redundante)"""
+
     model_config = ConfigDict(from_attributes=True)
     id: int
     fabricante: FabricantePublic
@@ -80,6 +81,7 @@ class ModeloEquipamentoPublicMinimal(ModeloEquipamentoBase):
 
 class TipoEquipamentoPublic(TipoEquipamentoPublicMinimal):
     """Tipo completo com seus modelos (para a tela de configuração)"""
+
     modelos: list[ModeloEquipamentoPublicMinimal] = []
 
 
@@ -108,6 +110,7 @@ class ModeloEquipamentoUpdate(BaseModel):
 
 class ModeloEquipamentoPublic(ModeloEquipamentoBase):
     """Modelo completo com objeto tipo_equipamento (para listagens de modelos)"""
+
     model_config = ConfigDict(from_attributes=True)
     id: int
     tipo_equipamento: TipoEquipamentoPublicMinimal

@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -17,8 +17,13 @@ class Grandeza(Base):
 
     nome: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     simbolo: Mapped[str] = mapped_column(String(20), nullable=False)
-    unidade_si: Mapped[str] = mapped_column(String(50), nullable=False)
 
+    unidades: Mapped[list["UnidadeMedida"]] = relationship(
+        back_populates="grandeza",
+        lazy="noload",
+        cascade="all, delete-orphan",
+        order_by="UnidadeMedida.nome",
+    )
     tipos_incerteza_b: Mapped[list["TipoIncertezaBTemplate"]] = relationship(
         back_populates="grandeza",
         lazy="noload",
@@ -28,6 +33,21 @@ class Grandeza(Base):
         back_populates="grandeza",
         lazy="noload",
     )
+
+
+class UnidadeMedida(Base):
+    """Unidade de medida associada a uma grandeza física (ex: mm, cm, m para Comprimento)."""
+
+    __tablename__ = "unidades_medida"
+
+    grandeza_id: Mapped[int] = mapped_column(
+        ForeignKey("grandezas.id"), nullable=False, index=True
+    )
+    nome: Mapped[str] = mapped_column(String(100), nullable=False)
+    simbolo: Mapped[str] = mapped_column(String(20), nullable=False)
+    is_si: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    grandeza: Mapped["Grandeza"] = relationship(back_populates="unidades", lazy="selectin")
 
 
 class TipoIncertezaBTemplate(Base):

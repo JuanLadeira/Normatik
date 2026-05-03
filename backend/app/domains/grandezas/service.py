@@ -2,9 +2,13 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 
-from app.domains.grandezas.model import Grandeza, TipoIncertezaBTemplate
+from app.domains.grandezas.model import Grandeza, TipoIncertezaBTemplate, UnidadeMedida
 from app.domains.grandezas.repository import GrandezaRepository, GrandezaRepositoryDep
-from app.domains.grandezas.schema import GrandezaCreate, TipoIncertezaBTemplateCreate
+from app.domains.grandezas.schema import (
+    GrandezaCreate,
+    TipoIncertezaBTemplateCreate,
+    UnidadeMedidaCreate,
+)
 
 
 class GrandezaService:
@@ -39,6 +43,23 @@ class GrandezaService:
         grandeza = await self.get_by_id(grandeza_id)
         template = TipoIncertezaBTemplate(grandeza_id=grandeza.id, **data.model_dump())
         return await self.repo.add_template_b(template)
+
+    async def add_unidade(
+        self, grandeza_id: int, data: UnidadeMedidaCreate
+    ) -> UnidadeMedida:
+        grandeza = await self.get_by_id(grandeza_id)
+        unidade = UnidadeMedida(grandeza_id=grandeza.id, **data.model_dump())
+        return await self.repo.add_unidade(unidade)
+
+    async def delete_unidade(self, grandeza_id: int, unidade_id: int) -> None:
+        await self.get_by_id(grandeza_id)
+        unidade = await self.repo.get_unidade_by_id(unidade_id)
+        if not unidade or unidade.grandeza_id != grandeza_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Unidade não encontrada",
+            )
+        await self.repo.delete_unidade(unidade)
 
     async def delete(self, grandeza_id: int) -> None:
         grandeza = await self.get_by_id(grandeza_id)

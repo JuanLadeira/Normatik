@@ -1,7 +1,7 @@
 # F2 · Core Metrológico — Documentação de Fase
 > SaaS Normatiq · FastAPI + SQLAlchemy async + Flutter  
-> Branch principal: `feature/f2-domain-models` (em andamento)  
-> Última atualização: 2026-05-01
+> Branch principal: `feature/f2-frontend-implementation`  
+> Última atualização: 2026-05-02
 
 ---
 
@@ -20,15 +20,16 @@ Durante o desenvolvimento dos domain models, o escopo foi **ampliado intencional
 
 ---
 
-## 2. O que foi construído — Domain Models
+## 2. O que foi construído — Backend completo
 
-### Branch `feature/f2-domain-models` (concluída, aguardando merge para main)
+### Branch `feature/f2-frontend-implementation`
 
-**Commits:**
+**Commits relevantes:**
 - `860fb48` — models iniciais (grandezas, equipamentos, OS, calibrações)
 - `ec62c77` — redesign com catálogo de equipamentos (TipoEquipamento, Fabricante, ModeloEquipamento) e ClienteLaboratorio
 - `11f0ee7` — controle de calibrações e histórico de padrões do laboratório
 - `0a30401` — DBML em `docs/schema.md`
+- `253a6db` — implementação completa: repositories, schemas, services, routers e testes
 
 **Migration:** `fa485ee281ae` (herda de `bef60d5ac6a0` — outbox)
 
@@ -152,7 +153,7 @@ Para calibrações de manômetros e similares, o técnico faz leituras simultân
 
 ---
 
-## 4. Regras de serviço críticas (implementar em `feature/f2-crud-apis`)
+## 4. Regras de serviço críticas (implementadas em `service.py` de cada domínio)
 
 ### PadraoService.registrar_calibracao()
 ```
@@ -180,118 +181,153 @@ correcao = -erro
 
 ---
 
-## 5. O que falta para concluir F2
+## 5. Endpoints implementados
 
-### Branch `feature/f2-crud-apis` (próxima)
+### `/api/grandezas`
 
-#### 5.1 Catálogo global (endpoints públicos por tenant, read-heavy)
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/` | Lista grandezas com tipos_incerteza_b_template |
+| `GET` | `/{grandeza_id}` | Detalhe da grandeza |
+| `POST` | `/` | Criar grandeza |
+| `POST` | `/{grandeza_id}/tipos-incerteza-b` | Adicionar template de incerteza B |
+| `DELETE` | `/{grandeza_id}` | Remover grandeza |
 
-| Endpoint | Descrição |
-|---|---|
-| `GET /grandezas` | Lista grandezas com tipos_incerteza_b_template |
-| `GET /tipos-equipamento` | Lista tipos filtráveis por grandeza |
-| `GET /tipos-equipamento/{id}/fabricantes` | Fabricantes com modelos para este tipo |
-| `GET /fabricantes/{id}/modelos?tipo={codigo}` | Modelos do fabricante para o tipo |
+### `/api/equipamentos`
 
-#### 5.2 Padrões do laboratório (multi-tenant)
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/tipos` | Lista tipos de equipamento (filtro por grandeza) |
+| `GET` | `/fabricantes` | Lista fabricantes |
+| `GET` | `/modelos` | Lista modelos (filtro por tipo/fabricante) |
+| `GET` | `/instrumentos` | Lista instrumentos do tenant |
+| `POST` | `/instrumentos` | Cadastrar instrumento |
+| `GET` | `/instrumentos/{id}` | Detalhe do instrumento |
+| `PATCH` | `/instrumentos/{id}` | Editar instrumento |
+| `DELETE` | `/instrumentos/{id}` | Remover instrumento |
+| `GET` | `/padroes` | Lista padrões do laboratório (com status_calibracao) |
+| `POST` | `/padroes` | Cadastrar padrão |
+| `GET` | `/padroes/{id}` | Detalhe do padrão |
+| `PATCH` | `/padroes/{id}` | Editar padrão |
+| `DELETE` | `/padroes/{id}` | Remover padrão |
 
-| Endpoint | Descrição |
-|---|---|
-| `POST /padroes` | Cadastrar padrão (seleciona tipo, fabricante, modelo do catálogo) |
-| `GET /padroes` | Listar com status_calibracao calculado e filtros (status, tipo, grandeza) |
-| `GET /padroes/{id}` | Detalhe do padrão |
-| `PATCH /padroes/{id}` | Editar dados do padrão |
-| `POST /padroes/{id}/calibracoes` | Registrar nova calibração externa recebida |
-| `GET /padroes/{id}/calibracoes` | Histórico de calibrações do padrão |
-| `GET /padroes/vencendo` | Query do relatório semanal — padrões vencidos ou vencendo |
+### `/api/clientes`
 
-#### 5.3 Clientes do laboratório (multi-tenant)
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/` | Lista clientes do tenant |
+| `POST` | `/` | Cadastrar cliente |
+| `GET` | `/{cliente_id}` | Detalhe do cliente |
+| `PATCH` | `/{cliente_id}` | Editar cliente |
+| `DELETE` | `/{cliente_id}` | Remover cliente |
 
-| Endpoint | Descrição |
-|---|---|
-| `POST /clientes` | Cadastrar cliente |
-| `GET /clientes` | Listar com filtros (nome, cnpj, ativo) |
-| `GET /clientes/{id}` | Detalhe com instrumentos e OS |
-| `PATCH /clientes/{id}` | Editar cliente |
+### `/api/os`
 
-#### 5.4 Instrumentos dos clientes (multi-tenant)
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/` | Lista OSs do tenant |
+| `POST` | `/` | Abrir OS |
+| `GET` | `/{id}` | Detalhe com itens e serviços |
+| `PATCH` | `/{id}` | Editar OS |
+| `DELETE` | `/{id}` | Remover OS |
 
-| Endpoint | Descrição |
-|---|---|
-| `POST /instrumentos` | Cadastrar instrumento (seleciona tipo/fabricante/modelo do catálogo) |
-| `GET /instrumentos` | Listar com filtros (cliente, tipo, grandeza) |
-| `GET /instrumentos/{id}` | Detalhe com histórico de serviços |
-| `PATCH /instrumentos/{id}` | Editar instrumento |
+### `/api/calibracoes`
 
-#### 5.5 Ordens de Serviço (multi-tenant)
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `POST` | `/` | Iniciar serviço de calibração |
+| `GET` | `/` | Lista serviços do tenant |
+| `GET` | `/{id}` | Detalhe com pontos e fontes de incerteza |
+| `PATCH` | `/{id}` | Editar cabeçalho do serviço |
+| `POST` | `/{id}/pontos` | Adicionar ponto (dispara calcular_incertezas()) |
+| `PUT` | `/{id}/pontos/{ponto_id}` | Atualizar leituras (recalcula) |
+| `DELETE` | `/{id}/pontos/{ponto_id}` | Remover ponto |
+| `POST` | `/{id}/fontes-b` | Declarar fonte Tipo B |
+| `DELETE` | `/{id}/fontes-b/{fonte_id}` | Remover fonte Tipo B |
 
-| Endpoint | Descrição |
-|---|---|
-| `POST /os` | Abrir OS vinculada a cliente |
-| `GET /os` | Listar com filtros (status, cliente, data) |
-| `GET /os/{id}` | Detalhe com itens e serviços |
-| `POST /os/{id}/itens` | Adicionar item à OS |
-| `POST /os/{os_id}/itens/{item_id}/servicos` | Iniciar serviço de calibração para um instrumento |
+## 6. O que falta para concluir F2
 
-#### 5.6 Calibrações (multi-tenant)
+**Backend:** concluído.
 
-| Endpoint | Descrição |
-|---|---|
-| `GET /calibracoes/{id}` | Detalhe do serviço com pontos e fontes de incerteza |
-| `POST /calibracoes/{id}/fontes-incerteza-b` | Declarar fonte Tipo B (com auto-fill de padrao.u_expandida_atual) |
-| `POST /calibracoes/{id}/pontos` | Adicionar ponto (dispara calcular_incertezas()) |
-| `PUT /calibracoes/{id}/pontos/{p_id}` | Atualizar leituras (recalcula) |
-| `POST /calibracoes/{id}/concluir` | Concluir serviço (valida mínimo 1 ponto) |
+**Flutter — telas a implementar** (branch `feature/f2-frontend-implementation`):
 
-### Branches subsequentes
-
-| Branch | Escopo |
-|---|---|
-| `feature/f2-workbook-scaffold` | `workbooks/base.py` + `registry.py` mapeando `TipoEquipamento.codigo` → classe de workbook |
-| `feature/f2-frontend-os-flow` | Flutter: telas de OS, seleção de tipo/fabricante/modelo, abertura de calibração |
+| Tela | Rota | Spec |
+|---|---|---|
+| S19 · Lista de padrões | `/standards` | planejamento-frontend.MD |
+| S20 · Detalhe do padrão (abas) | `/standards/:id` | planejamento-frontend.MD |
+| S21 · Criar/editar padrão | `/standards/new` | planejamento-frontend.MD |
+| S26 · Lista de clientes | `/clients` | planejamento-frontend.MD |
+| S27 · Detalhe do cliente (abas) | `/clients/:id` | planejamento-frontend.MD |
+| S28 · Criar/editar cliente | `/clients/new` | planejamento-frontend.MD |
+| S29 · Lista de instrumentos | `/instruments` | planejamento-frontend.MD |
+| S30 · Detalhe do instrumento | `/instruments/:id` | planejamento-frontend.MD |
+| S31 · Criar/editar instrumento | `/instruments/new` | planejamento-frontend.MD |
+| S05 · Lista de calibrações | `/calibrations` | planejamento-frontend.MD |
+| S06 · Detalhe da calibração (abas) | `/calibrations/:id` | planejamento-frontend.MD |
+| S07 · Criar/editar calibração | `/calibrations/new` | planejamento-frontend.MD |
+| S08 · Adicionar ponto | `/calibrations/:id/points/new` | planejamento-frontend.MD |
+| S09 · Detalhe do ponto + budget | `/calibrations/:id/points/:point_id` | planejamento-frontend.MD |
 
 ---
 
-## 6. Arquitetura de domínios
+## 7. Arquitetura de domínios
 
 ```
 app/domains/
 ├── grandezas/
-│   └── model.py        ✅ Grandeza, TipoIncertezaBTemplate
+│   ├── model.py        ✅ Grandeza, TipoIncertezaBTemplate
+│   ├── schema.py       ✅
+│   ├── repository.py   ✅
+│   ├── service.py      ✅
+│   └── router.py       ✅ /api/grandezas
 │
 ├── equipamentos/
-│   └── model.py        ✅ TipoEquipamento, Fabricante, ModeloEquipamento
-│                          Equipamento (JTI base)
-│                          Instrumento, PadraoDeCalibração
-│                          HistoricoCalibracaoPadrao
-│                          StatusCalibracaoPadrao (@property)
+│   ├── model.py        ✅ TipoEquipamento, Fabricante, ModeloEquipamento
+│   │                      Equipamento (JTI base), Instrumento, PadraoDeCalibração
+│   │                      HistoricoCalibracaoPadrao, StatusCalibracaoPadrao (@property)
+│   ├── schema.py       ✅
+│   ├── repository.py   ✅
+│   ├── service.py      ✅
+│   └── router.py       ✅ /api/equipamentos
 │
 ├── clientes/
-│   └── model.py        ✅ ClienteLaboratorio
+│   ├── model.py        ✅ ClienteLaboratorio
+│   ├── schema.py       ✅
+│   ├── repository.py   ✅
+│   ├── service.py      ✅
+│   └── router.py       ✅ /api/clientes
 │
 ├── ordens_servico/
-│   └── model.py        ✅ OrdemDeServico, ItemOS
+│   ├── model.py        ✅ OrdemDeServico, ItemOS
+│   ├── schema.py       ✅
+│   ├── repository.py   ✅
+│   ├── service.py      ✅
+│   └── router.py       ✅ /api/os
 │
 └── calibracoes/
-    └── model.py        ✅ ServicoDeCalibração, IncertezaBFonte
-                           PontoDeCalibração (+ calcular_incertezas())
+    ├── model.py        ✅ ServicoDeCalibração, IncertezaBFonte
+    │                      PontoDeCalibração (+ calcular_incertezas())
+    ├── schema.py       ✅
+    ├── repository.py   ✅
+    ├── service.py      ✅
+    └── router.py       ✅ /api/calibracoes
 ```
 
 **Status de cada camada:**
 
 | Camada | Status |
 |---|---|
-| `model.py` | ✅ Todos os domínios concluídos |
-| `schema.py` (Pydantic) | ⬜ A fazer em `f2-crud-apis` |
-| `repository.py` | ⬜ A fazer em `f2-crud-apis` |
-| `service.py` | ⬜ A fazer em `f2-crud-apis` |
-| `router.py` | ⬜ A fazer em `f2-crud-apis` |
-| `workbooks/` | ⬜ A fazer em `f2-workbook-scaffold` |
-| Flutter (telas) | ⬜ A fazer em `f2-frontend-os-flow` |
+| `model.py` | ✅ Todos os domínios |
+| `schema.py` (Pydantic) | ✅ Todos os domínios |
+| `repository.py` | ✅ Todos os domínios |
+| `service.py` | ✅ Todos os domínios |
+| `router.py` | ✅ Todos os domínios |
+| `workbooks/` | ⬜ A fazer em F8 |
+| Flutter (telas) | ⬜ Em andamento — branch `feature/f2-frontend-implementation` |
 
 ---
 
-## 7. Schema do banco
+## 8. Schema do banco
 
 Ver `docs/schema.md` para o DBML completo (dbdiagram.io).
 

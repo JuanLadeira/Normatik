@@ -1,5 +1,7 @@
-.PHONY: help up down restart logs build shell db-migrate db-seed test clean \
-        prod-up prod-down prod-logs prod-build prod-migrate prod-shell
+.PHONY: help up down restart logs build shell db-migrate db-seed \
+        db-seed-usuarios db-seed-grandezas test clean \
+        prod-up prod-down prod-logs prod-build prod-migrate prod-shell \
+        prod-seed prod-seed-usuarios prod-seed-grandezas
 
 # Variáveis
 DC      = docker compose
@@ -33,8 +35,13 @@ db-migrate: ## Executa as migrações do banco de dados
 db-makemigrations: ## Gera uma nova migração (uso: make db-makemigrations msg="descrição")
 	$(DC) exec $(APP_SERVICE) uv run alembic revision --autogenerate -m "$(msg)"
 
-db-seed: ## Executa o script de seed inicial
-	$(DC) exec $(APP_SERVICE) /entrypoint.sh
+db-seed-usuarios: ## Seed de admin, tenant e usuário padrão
+	$(DC) exec $(APP_SERVICE) uv run python -m app.seed_owner
+
+db-seed-grandezas: ## Seed de grandezas físicas e unidades de medida
+	$(DC) exec $(APP_SERVICE) uv run python -m app.seed_grandezas
+
+db-seed: db-seed-usuarios db-seed-grandezas ## Executa todos os seeds (usuários + grandezas)
 
 test: ## Executa os testes automatizados
 	$(DC) exec $(APP_SERVICE) uv run python -m pytest
@@ -66,3 +73,11 @@ prod-migrate: ## [prod] Executa migrações em produção
 
 prod-shell: ## [prod] Abre shell no container da API em produção
 	$(DC_PROD) exec api /bin/bash
+
+prod-seed-usuarios: ## [prod] Seed de admin, tenant e usuário padrão
+	$(DC_PROD) exec api uv run python -m app.seed_owner
+
+prod-seed-grandezas: ## [prod] Seed de grandezas físicas e unidades de medida
+	$(DC_PROD) exec api uv run python -m app.seed_grandezas
+
+prod-seed: prod-seed-usuarios prod-seed-grandezas ## [prod] Executa todos os seeds

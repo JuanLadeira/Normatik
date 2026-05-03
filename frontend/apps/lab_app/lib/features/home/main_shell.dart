@@ -64,9 +64,9 @@ class MainShell extends ConsumerWidget {
                           label: Text('Clientes'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.group_outlined),
-                          selectedIcon: Icon(Icons.group),
-                          label: Text('Usuários'),
+                          icon: Icon(Icons.settings_outlined),
+                          selectedIcon: Icon(Icons.settings),
+                          label: Text('Config.'),
                         ),
                       ],
                       selectedIndex: navigationShell.currentIndex,
@@ -152,10 +152,10 @@ class MainShell extends ConsumerWidget {
               onTap: (index) => navigationShell.goBranch(index),
               items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Início'),
-                BottomNavigationBarItem(icon: Icon(Icons.straighten), label: 'Ops'),
-                BottomNavigationBarItem(icon: Icon(Icons.science), label: 'Lab'),
+                BottomNavigationBarItem(icon: Icon(Icons.straighten), label: 'Operações'),
+                BottomNavigationBarItem(icon: Icon(Icons.science), label: 'Padrões'),
                 BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clientes'),
-                BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Usuários'),
+                BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Config.'),
               ],
             ),
     );

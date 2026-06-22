@@ -11,3 +11,4 @@ import app.domains.plans.model  # noqa: F401
 import app.domains.subscriptions.model  # noqa: F401
 import app.domains.tenants.model  # noqa: F401
 import app.domains.users.model  # noqa: F401
+import app.domains.certificados_padrao.model  # noqa: F401

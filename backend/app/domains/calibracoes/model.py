@@ -1,5 +1,6 @@
 import enum
 import math
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -7,6 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.domains.grandezas.model import DistribuicaoIncerteza
+
+if TYPE_CHECKING:
+    from app.domains.certificados_padrao.model import CurvaCorrecao
 
 
 class StatusServico(enum.StrEnum):
@@ -128,11 +132,16 @@ class PontoDeCalibração(Base):
         back_populates="pontos", lazy="selectin"
     )
 
-    def calcular_incertezas(self, fontes_b: list["IncertezaBFonte"]) -> None:
+    def calcular_incertezas(
+        self,
+        fontes_b: list["IncertezaBFonte"],
+        curva_padrao: "CurvaCorrecao | None" = None,
+    ) -> None:
         """Calcula estatísticas e incertezas GUM para este ponto.
 
         Suporta calibração simples (só instrumento) e dual (instrumento + padrão).
         A referência é media_padrao quando há leituras do padrão, valor_nominal caso contrário.
+        Se curva_padrao for fornecida, aplica a correção ao valor do padrão.
         """
         leituras_i = self.leituras_instrumento or []
         n_i = len(leituras_i)
@@ -158,12 +167,23 @@ class PontoDeCalibração(Base):
         referencia = self.valor_nominal
 
         if n_p > 0:
-            self.media_padrao = sum(leituras_p) / n_p
+            raw_media_p = sum(leituras_p) / n_p
+            if curva_padrao:
+                # Aplica f(x) = a0 + a1*x + ... (correção)
+                from app.domains.certificados_padrao.service import (
+                    CertificadoPadraoService,
+                )
+
+                correcao_p = CertificadoPadraoService.aplicar_correcao(
+                    curva_padrao, raw_media_p
+                )
+                self.media_padrao = raw_media_p + correcao_p
+            else:
+                self.media_padrao = raw_media_p
+
             referencia = self.media_padrao
             if n_p > 1:
-                var_p = sum((x - self.media_padrao) ** 2 for x in leituras_p) / (
-                    n_p - 1
-                )
+                var_p = sum((x - raw_media_p) ** 2 for x in leituras_p) / (n_p - 1)
                 self.desvio_padrao_padrao = math.sqrt(var_p)
                 self.u_tipo_a_padrao = self.desvio_padrao_padrao / math.sqrt(n_p)
             else:
@@ -173,9 +193,30 @@ class PontoDeCalibração(Base):
         self.erro = self.media_instrumento - referencia
         self.correcao = -self.erro
 
-        # ── Incerteza combinada e expandida ───────────────────────────────────
-        soma_b = sum(f.valor_u**2 for f in fontes_b)
-        self.u_combinada = math.sqrt(
-            self.u_tipo_a**2 + self.u_tipo_a_padrao**2 + soma_b
-        )
+        # ── Incerteza combinada e expandida (Welch-Satterthwaite) ──────────────
+        # u_c = sqrt(u_a_i² + u_a_p² + sum(u_b_j²))
+        soma_u_quad = self.u_tipo_a**2 + self.u_tipo_a_padrao**2
+        soma_veff_den = 0.0
+
+        # Graus de liberdade Tipo A (n - 1)
+        if n_i > 1:
+            soma_veff_den += (self.u_tipo_a**4) / (n_i - 1)
+        if n_p > 1:
+            soma_veff_den += (self.u_tipo_a_padrao**4) / (n_p - 1)
+
+        for f in fontes_b:
+            soma_u_quad += f.valor_u**2
+            if f.graus_liberdade and f.graus_liberdade > 0:
+                soma_veff_den += (f.valor_u**4) / f.graus_liberdade
+
+        self.u_combinada = math.sqrt(soma_u_quad)
+
+        # Graus de liberdade efetivos (Welch-Satterthwaite)
+        veff = float("inf")
+        if soma_veff_den > 0:
+            veff = (self.u_combinada**4) / soma_veff_den
+
+        from app.domains.certificados_padrao.service import CertificadoPadraoService
+
+        self.fator_k = CertificadoPadraoService.calcular_k_student(veff)
         self.u_expandida = self.fator_k * self.u_combinada

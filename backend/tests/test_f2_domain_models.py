@@ -90,7 +90,9 @@ def test_ponto_calibracao_calculo_simples():
     # u_c = sqrt(u_a^2 + u_b^2) = sqrt(0.028867^2 + 0.01^2)
     # u_c = sqrt(0.0008333 + 0.0001) = sqrt(0.0009333) = 0.03055
     assert ponto.u_combinada == pytest.approx(0.03055, abs=1e-5)
-    assert ponto.u_expandida == pytest.approx(0.0611, abs=1e-4)
+    # Com Welch-Satterthwaite, veff = (0.03055^4) / [(0.028867^4)/3] = 0.000000871 / 0.000000232 = 3.75
+    # k para veff=3.75 é aprox 2.85 -> u_exp = 0.03055 * 2.85 = 0.087
+    assert ponto.u_expandida == pytest.approx(0.087, abs=1e-3)
 
 
 def test_ponto_calibracao_calculo_dual():

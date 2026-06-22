@@ -33,6 +33,13 @@ from app.domains.calibracoes.model import (
     IncertezaBFonte,
     PontoDeCalibração,
 )  # noqa: F401
+from app.domains.certificados_padrao.model import (
+    FormularioMedicaoTemplate,
+    CertificadoCalibracaoPadrao,
+    PontoMedicaoCertificado,
+    CurvaCorrecao,
+    UsoDePadrao,
+)  # noqa: F401
 
 config = context.config
 

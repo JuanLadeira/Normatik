@@ -11,12 +11,16 @@ import 'features/settings/users_page.dart';
 import 'features/settings/settings_hub_page.dart';
 import 'features/settings/grandezas_settings_page.dart';
 import 'features/settings/tipos_instrumento_settings_page.dart';
+import 'features/settings/templates_medicao_page.dart';
 import 'features/clientes/clientes_list_page.dart';
 import 'features/clientes/cliente_detail_page.dart';
 import 'features/clientes/cliente_form_page.dart';
 import 'features/padroes/padroes_list_page.dart';
 import 'features/padroes/padrao_detail_page.dart';
 import 'features/padroes/padrao_form_page.dart';
+import 'features/padroes/certificado_form_page.dart';
+import 'features/padroes/certificado_detail_page.dart';
+import 'features/padroes/certificado_analise_page.dart';
 import 'features/instrumentos/instrumentos_list_page.dart';
 import 'features/instrumentos/instrumento_detail_page.dart';
 import 'features/instrumentos/instrumento_form_page.dart';
@@ -131,6 +135,42 @@ final _routerProvider = Provider<GoRouter>((ref) {
                               int.parse(state.pathParameters['id']!),
                         ),
                       ),
+                      GoRoute(
+                        path: 'certificados/novo',
+                        builder: (context, state) => CertificadoFormPage(
+                          padraoId: int.parse(state.pathParameters['id']!),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'certificados/:certId',
+                        builder: (context, state) => CertificadoDetailPage(
+                          padraoId: int.parse(state.pathParameters['id']!),
+                          certId: int.parse(state.pathParameters['certId']!),
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'analise',
+                            builder: (context, state) {
+                              final extra =
+                                  state.extra as Map<String, dynamic>? ?? {};
+                              return CertificadoAnalisePage(
+                                certId: int.parse(
+                                    state.pathParameters['certId']!),
+                                campos:
+                                    extra['campos'] as List<dynamic>? ?? [],
+                                campoXDefault:
+                                    extra['campo_x'] as String?,
+                                campoYDefault:
+                                    extra['campo_y'] as String?,
+                                tipoDefault:
+                                    extra['tipo'] as String? ?? 'linear',
+                                grauDefault:
+                                    extra['grau'] as int? ?? 1,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ],
@@ -225,6 +265,11 @@ final _routerProvider = Provider<GoRouter>((ref) {
                     path: 'tipos-instrumento',
                     builder: (context, state) =>
                         const TiposInstrumentoSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'templates-medicao',
+                    builder: (context, state) =>
+                        const TemplatesMedicaoPage(),
                   ),
                 ],
               ),

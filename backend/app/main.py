@@ -20,6 +20,7 @@ from app.domains.clientes.router import router as clientes_router
 from app.domains.equipamentos.router import router as equipamentos_router
 from app.domains.ordens_servico.router import router as os_router
 from app.domains.calibracoes.router import router as calibracoes_router
+from app.domains.certificados_padrao.router import router as certificados_padrao_router
 
 # Importa todos os models para que o Base.metadata os conheça
 import app.domains.plans.model  # noqa: F401
@@ -33,6 +34,7 @@ import app.domains.clientes.model  # noqa: F401
 import app.domains.equipamentos.model  # noqa: F401
 import app.domains.ordens_servico.model  # noqa: F401
 import app.domains.calibracoes.model  # noqa: F401
+import app.domains.certificados_padrao.model  # noqa: F401
 
 
 @asynccontextmanager
@@ -72,6 +74,7 @@ app.include_router(clientes_router)
 app.include_router(equipamentos_router)
 app.include_router(os_router)
 app.include_router(calibracoes_router)
+app.include_router(certificados_padrao_router)
 
 
 @app.get("/health")

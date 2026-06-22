@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:normatiq_ui/normatiq_ui.dart';
 import '../../core/widgets/form_card.dart';
 import '../../core/widgets/tipo_equipamento_selector.dart';

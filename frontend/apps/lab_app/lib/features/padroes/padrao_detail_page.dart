@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:normatiq_ui/normatiq_ui.dart';
+import '../../core/api/client.dart';
 import '../../core/widgets/faixas_medicao_editor.dart';
 import 'padroes_provider.dart';
 import 'padroes_list_page.dart' show StatusCalibracaoChip, statusCalibracaoColor;
+import 'certificados_padrao_provider.dart';
 
 class PadraoDetailPage extends ConsumerStatefulWidget {
   final int padraoId;
@@ -50,9 +52,10 @@ class _PadraoDetailPageState extends ConsumerState<PadraoDetailPage>
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('${padrao.marca} ${padrao.modelo}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 18)),
+            title: Text(
+              '${padrao.tag != null ? '${padrao.tag} | ' : ''}${padrao.tipoEquipamentoNome ?? ''} ${padrao.marca} (S/N: ${padrao.numeroSerie})',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             backgroundColor: Theme.of(context).colorScheme.surface,
             surfaceTintColor: Colors.transparent,
             actions: [
@@ -67,7 +70,7 @@ class _PadraoDetailPageState extends ConsumerState<PadraoDetailPage>
               controller: _tabController,
               tabs: const [
                 Tab(text: 'Dados'),
-                Tab(text: 'Calibrações'),
+                Tab(text: 'Certificados'),
               ],
             ),
           ),
@@ -75,7 +78,7 @@ class _PadraoDetailPageState extends ConsumerState<PadraoDetailPage>
             controller: _tabController,
             children: [
               _DadosTab(padrao: padrao),
-              _CalibracoesPadraoTab(padraoId: padrao.id),
+              _CertificadosPadraoTab(padraoId: padrao.id),
             ],
           ),
         );
@@ -183,149 +186,205 @@ class _DadosTab extends StatelessWidget {
   }
 }
 
-class _CalibracoesPadraoTab extends ConsumerStatefulWidget {
-  final int padraoId;
-  const _CalibracoesPadraoTab({required this.padraoId});
+// ── Aba de Certificados (F2) ───────────────────────────────────────────────────
 
-  @override
-  ConsumerState<_CalibracoesPadraoTab> createState() =>
-      _CalibracoesPadraoTabState();
+Color _certStatusColor(String status) {
+  switch (status) {
+    case 'ativo':
+      return NormatiqColors.success700;
+    case 'aguardando_aprovacao_curva':
+      return NormatiqColors.warning700;
+    case 'expirado':
+      return NormatiqColors.danger700;
+    default:
+      return NormatiqColors.neutral500;
+  }
 }
 
-class _CalibracoesPadraoTabState
-    extends ConsumerState<_CalibracoesPadraoTab> {
+String _certStatusLabel(String status) {
+  switch (status) {
+    case 'ativo':
+      return 'Ativo';
+    case 'aguardando_aprovacao_curva':
+      return 'Aguardando Aprov.';
+    case 'expirado':
+      return 'Expirado';
+    default:
+      return 'Rascunho';
+  }
+}
+
+class _CertificadosPadraoTab extends ConsumerWidget {
+  final int padraoId;
+  const _CertificadosPadraoTab({required this.padraoId});
+
+  Future<void> _excluir(BuildContext context, WidgetRef ref, int certId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir Certificado'),
+        content: const Text(
+            'Todos os pontos de medição e curvas associadas serão excluídos permanentemente. Confirmar?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: NormatiqColors.danger700),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final client = ref.read(apiClientProvider);
+      await client.dio.delete('/api/certificados-padrao/certificados/$certId');
+      ref.invalidate(certificadosPadraoProvider(padraoId));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao excluir: $e'),
+            backgroundColor: NormatiqColors.danger700,
+          ),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
-    final historicoAsync =
-        ref.watch(historicoCalibracaoPadraoProvider(widget.padraoId));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final certsAsync = ref.watch(certificadosPadraoProvider(padraoId));
 
     return Scaffold(
-      body: historicoAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erro: $e')),
-        data: (historico) {
-          if (historico.isEmpty) {
+      body: certsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Erro ao carregar certificados: $e')),
+        data: (certs) {
+          if (certs.isEmpty) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.history_outlined,
+                  const Icon(Icons.verified_outlined,
                       size: 48, color: NormatiqColors.neutral400),
                   const SizedBox(height: 12),
-                  const Text('Nenhuma calibração registrada.',
-                      style:
-                          TextStyle(color: NormatiqColors.neutral500)),
+                  const Text(
+                    'Nenhum certificado registrado.',
+                    style: TextStyle(color: NormatiqColors.neutral500),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () =>
+                        context.push('/padroes/$padraoId/certificados/novo'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Novo Certificado'),
+                  ),
                 ],
               ),
             );
           }
           return ListView.separated(
             padding: const EdgeInsets.all(NormatiqSpacing.s4),
-            itemCount: historico.length,
+            itemCount: certs.length,
             separatorBuilder: (_, __) =>
                 const SizedBox(height: NormatiqSpacing.s2),
             itemBuilder: (context, i) {
-              final h = historico[i];
+              final cert = certs[i];
+              final statusColor = _certStatusColor(cert.status);
               return Card(
                 margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.all(NormatiqSpacing.s4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Cert. ${h.numeroCertificado}',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, size: 18),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onSelected: (val) {
-                              if (val == 'edit') {
-                                _showRegistrarCalibracaoSheet(context,
-                                    historico: h);
-                              } else if (val == 'delete') {
-                                _showDeleteHistoricoConfirm(context, h);
-                              }
-                            },
-                            itemBuilder: (ctx) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: ListTile(
-                                  leading: Icon(Icons.edit_outlined, size: 20),
-                                  title: Text('Editar'),
-                                  contentPadding: EdgeInsets.zero,
-                                  dense: true,
-                                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(NormatiqRadius.md),
+                  onTap: () => context.push(
+                      '/padroes/$padraoId/certificados/${cert.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(NormatiqSpacing.s4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cert. #${cert.numeroCertificado}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
                               ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: ListTile(
-                                  leading: Icon(Icons.delete_outline,
-                                      size: 20, color: NormatiqColors.danger700),
-                                  title: Text('Excluir',
-                                      style: TextStyle(
-                                          color: NormatiqColors.danger700)),
-                                  contentPadding: EdgeInsets.zero,
-                                  dense: true,
-                                ),
+                              const SizedBox(height: 4),
+                              Text(
+                                cert.laboratorioCalibrador,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: NormatiqColors.neutral500),
                               ),
+                              Text(
+                                'Validade: ${cert.dataValidade}',
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: NormatiqColors.neutral500),
+                              ),
+                              if (cert.uPadrao != null)
+                                Text(
+                                  'u = ${cert.uPadrao!.toStringAsFixed(4)}',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: NormatiqColors.neutral500),
+                                ),
                             ],
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: h.aceito
-                                  ? NormatiqColors.success700
-                                      .withOpacity(0.1)
-                                  : NormatiqColors.danger700
-                                      .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(
-                                  NormatiqRadius.full),
-                            ),
-                            child: Text(
-                              h.aceito ? 'Aceito' : 'Recusado',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: h.aceito
-                                      ? NormatiqColors.success700
-                                      : NormatiqColors.danger700),
+                        ),
+                        const SizedBox(width: NormatiqSpacing.s3),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius:
+                                BorderRadius.circular(NormatiqRadius.full),
+                            border: Border.all(
+                                color: statusColor.withOpacity(0.5)),
+                          ),
+                          child: Text(
+                            _certStatusLabel(cert.status),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Calibrado: ${h.dataCalibracao} · Vencimento: ${h.dataVencimento}',
-                        style: const TextStyle(
-                            fontSize: 12,
-                            color: NormatiqColors.neutral500),
-                      ),
-                      if (h.laboratorioCalibrador != null)
-                        Text(
-                          'Lab: ${h.laboratorioCalibrador}',
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: NormatiqColors.neutral500),
                         ),
-                      if (h.uExpandidaCertificado != null)
-                        Text(
-                          'U = ${h.uExpandidaCertificado}',
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: NormatiqColors.neutral500),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert,
+                              color: NormatiqColors.neutral400),
+                          onSelected: (v) {
+                            if (v == 'delete') {
+                              _excluir(context, ref, cert.id);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline,
+                                      color: NormatiqColors.danger700,
+                                      size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Excluir',
+                                      style: TextStyle(
+                                          color: NormatiqColors.danger700)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -334,352 +393,16 @@ class _CalibracoesPadraoTabState
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showRegistrarCalibracaoSheet(context),
+        onPressed: () =>
+            context.push('/padroes/$padraoId/certificados/novo'),
         icon: const Icon(Icons.add),
-        label: const Text('Registrar calibração'),
-      ),
-    );
-  }
-
-  void _showDeleteHistoricoConfirm(
-      BuildContext context, HistoricoCalibracaoPadrao h) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excluir registro'),
-        content:
-            const Text('Deseja realmente excluir este registro de calibração?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await ref
-                    .read(padroesProvider.notifier)
-                    .deleteHistorico(widget.padraoId, h.id);
-                if (mounted) {
-                  ref.invalidate(
-                      historicoCalibracaoPadraoProvider(widget.padraoId));
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Erro ao excluir: $e'),
-                    backgroundColor: NormatiqColors.danger700,
-                  ));
-                }
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: NormatiqColors.danger700,
-            ),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRegistrarCalibracaoSheet(BuildContext context, {HistoricoCalibracaoPadrao? historico}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => _RegistrarCalibracaoSheet(
-        padraoId: widget.padraoId,
-        historico: historico,
-        onSaved: () {
-          if (mounted) {
-            ref.invalidate(
-                historicoCalibracaoPadraoProvider(widget.padraoId));
-          }
-        },
+        label: const Text('Novo Certificado'),
       ),
     );
   }
 }
 
-class _RegistrarCalibracaoSheet extends ConsumerStatefulWidget {
-  final int padraoId;
-  final HistoricoCalibracaoPadrao? historico;
-  final VoidCallback onSaved;
-  const _RegistrarCalibracaoSheet(
-      {required this.padraoId, this.historico, required this.onSaved});
-
-  @override
-  ConsumerState<_RegistrarCalibracaoSheet> createState() =>
-      _RegistrarCalibracaoSheetState();
-}
-
-class _RegistrarCalibracaoSheetState
-    extends ConsumerState<_RegistrarCalibracaoSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _certCtrl = TextEditingController();
-  final _labCtrl = TextEditingController();
-  final _uCtrl = TextEditingController();
-  final _obsCtrl = TextEditingController();
-  DateTime? _dataCalib;
-  DateTime? _dataVenc;
-  bool _aceito = true;
-  bool _isLoading = false;
-
-  bool get _isEdit => widget.historico != null;
-
-  @override
-  void initState() {
-    super.initState();
-    if (_isEdit) {
-      final h = widget.historico!;
-      _certCtrl.text = h.numeroCertificado;
-      _labCtrl.text = h.laboratorioCalibrador ?? '';
-      _uCtrl.text = h.uExpandidaCertificado?.toString() ?? '';
-      _obsCtrl.text = h.observacoes ?? '';
-      _aceito = h.aceito;
-      try {
-        _dataCalib = DateTime.parse(h.dataCalibracao);
-        _dataVenc = DateTime.parse(h.dataVencimento);
-      } catch (_) {}
-    }
-  }
-
-  @override
-  void dispose() {
-    _certCtrl.dispose();
-    _labCtrl.dispose();
-    _uCtrl.dispose();
-    _obsCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDate(bool isCalib) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null && mounted) {
-      setState(() {
-        if (isCalib) {
-          _dataCalib = picked;
-        } else {
-          _dataVenc = picked;
-        }
-      });
-    }
-  }
-
-  String _fmt(DateTime? d) =>
-      d == null ? 'Selecionar' : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
-  String _fmtIso(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_dataCalib == null || _dataVenc == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Informe as datas de calibração e vencimento.')));
-      return;
-    }
-
-    // Captura o notifier antes do gap assíncrono para evitar usar 'ref' depois
-    final notifier = ref.read(padroesProvider.notifier);
-    final data = {
-      'data_calibracao': _fmtIso(_dataCalib!),
-      'data_vencimento': _fmtIso(_dataVenc!),
-      'numero_certificado': _certCtrl.text.trim(),
-      'laboratorio_calibrador':
-          _labCtrl.text.trim().isEmpty ? null : _labCtrl.text.trim(),
-      'u_expandida_certificado': double.tryParse(_uCtrl.text.trim()),
-      'observacoes': _obsCtrl.text.trim().isEmpty ? null : _obsCtrl.text.trim(),
-      'aceito': _aceito,
-    };
-
-    setState(() => _isLoading = true);
-    try {
-      if (_isEdit) {
-        await notifier.updateHistorico(
-            widget.padraoId, widget.historico!.id, data);
-      } else {
-        await notifier.registrarCalibracao(widget.padraoId, data);
-      }
-
-      if (!mounted) return;
-
-      widget.onSaved();
-      Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erro ao registrar: $e'),
-          backgroundColor: NormatiqColors.danger700,
-        ));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Excluir registro'),
-        content: const Text('Deseja realmente excluir este registro de calibração?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: NormatiqColors.danger700),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      setState(() => _isLoading = true);
-      try {
-        await ref.read(padroesProvider.notifier).deleteHistorico(widget.padraoId, widget.historico!.id);
-        if (mounted) {
-          widget.onSaved();
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Erro ao excluir: $e'),
-            backgroundColor: NormatiqColors.danger700,
-          ));
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: NormatiqSpacing.s4,
-          right: NormatiqSpacing.s4,
-          top: NormatiqSpacing.s4),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(_isEdit ? 'Editar calibração' : 'Registrar calibração',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
-                  ),
-                  if (_isEdit)
-                    IconButton(
-                        onPressed: _isLoading ? null : _confirmDelete,
-                        icon: const Icon(Icons.delete_outline,
-                            color: NormatiqColors.danger700)),
-                  IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close)),
-                ],
-              ),
-              const SizedBox(height: NormatiqSpacing.s4),
-              TextFormField(
-                controller: _certCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Número do certificado *'),
-                enabled: !_isLoading,
-                validator: (v) =>
-                    v!.trim().isEmpty ? 'Informe o certificado' : null,
-              ),
-              const SizedBox(height: NormatiqSpacing.s3),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pickDate(true),
-                      icon: const Icon(Icons.calendar_today, size: 16),
-                      label: Text('Calibrado: ${_fmt(_dataCalib)}'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pickDate(false),
-                      icon: const Icon(Icons.event_available, size: 16),
-                      label: Text('Vencimento: ${_fmt(_dataVenc)}'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: NormatiqSpacing.s3),
-              TextFormField(
-                controller: _labCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'Laboratório calibrador'),
-                enabled: !_isLoading,
-              ),
-              const SizedBox(height: NormatiqSpacing.s3),
-              TextFormField(
-                controller: _uCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'U expandida do certificado'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                enabled: !_isLoading,
-              ),
-              const SizedBox(height: NormatiqSpacing.s3),
-              TextFormField(
-                controller: _obsCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Observações'),
-                maxLines: 2,
-                enabled: !_isLoading,
-              ),
-              const SizedBox(height: NormatiqSpacing.s3),
-              SwitchListTile(
-                title: const Text('Resultado aceito'),
-                value: _aceito,
-                onChanged: _isLoading
-                    ? null
-                    : (v) => setState(() => _aceito = v),
-                contentPadding: EdgeInsets.zero,
-              ),
-              const SizedBox(height: NormatiqSpacing.s4),
-              FilledButton(
-                onPressed: _isLoading ? null : _submit,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : Text(_isEdit ? 'Salvar' : 'Registrar'),
-              ),
-              const SizedBox(height: NormatiqSpacing.s4),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Widgets auxiliares reutilizáveis
+// ── Widgets auxiliares reutilizáveis ───────────────────────────────────────────
 
 class _PhotosCard extends StatelessWidget {
   final List<String> fotos;

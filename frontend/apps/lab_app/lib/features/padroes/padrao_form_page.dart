@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:normatiq_ui/normatiq_ui.dart';
 import '../../core/widgets/form_card.dart';
 import '../../core/widgets/tipo_equipamento_selector.dart';
@@ -133,11 +132,22 @@ class _PadraoFormPageState extends ConsumerState<PadraoFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    String title = 'Novo Padrão';
+    if (_isEdit) {
+      final padroes = ref.watch(padroesProvider).valueOrNull ?? [];
+      final p = padroes.where((p) => p.id == widget.padraoId).firstOrNull;
+      if (p != null) {
+        title = '${p.tag != null ? '${p.tag} | ' : ''}${p.tipoEquipamentoNome ?? ''} ${p.marca} (S/N: ${p.numeroSerie})';
+      } else {
+        title = 'Editar Padrão';
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _isEdit ? 'Editar Padrão' : 'Novo Padrão',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,

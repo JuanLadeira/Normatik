@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:normatiq_ui/normatiq_ui.dart';
 import '../../core/api/client.dart';
-import 'auth_provider.dart';
 
 class AcceptInvitePage extends ConsumerStatefulWidget {
   final String token;

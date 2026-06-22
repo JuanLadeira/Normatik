@@ -33,6 +33,13 @@ class SettingsHubPage extends StatelessWidget {
             subtitle: 'Gerencie tipos de equipamento e modelos',
             onTap: () => context.push('/more/tipos-instrumento'),
           ),
+          const SizedBox(height: NormatiqSpacing.s2),
+          _SettingsTile(
+            icon: Icons.table_chart_outlined,
+            title: 'Templates de Medição',
+            subtitle: 'Configure templates de formulário para calibração',
+            onTap: () => context.push('/more/templates-medicao'),
+          ),
           const SizedBox(height: NormatiqSpacing.s4),
           _SectionHeader('Acesso'),
           _SettingsTile(

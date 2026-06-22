@@ -9,6 +9,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copia dependências (usando lockfile se existir)
 COPY backend/pyproject.toml backend/uv.lock* ./
@@ -22,7 +23,7 @@ COPY backend/alembic/ ./alembic/
 COPY backend/alembic.ini ./
 
 # Sincroniza o projeto final (incluindo dependências dev para testes)
-RUN uv sync --extra dev
+RUN uv sync --group dev
 
 # Copia o entrypoint da pasta de composição
 COPY compose/dev/api/entrypoint.sh /entrypoint.sh

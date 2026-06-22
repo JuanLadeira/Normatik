@@ -4,7 +4,9 @@ from typing import Annotated
 
 import numpy as np
 from fastapi import Depends, HTTPException, status
+from scipy import stats
 
+from app.core.storage import StorageService, StorageServiceDep
 from app.domains.certificados_padrao.model import (
     CertificadoCalibracaoPadrao,
     CurvaCorrecao,
@@ -31,6 +33,7 @@ from app.domains.certificados_padrao.schema import (
     UsoPadraoCreate,
 )
 from app.domains.equipamentos.model import HistoricoCalibracaoPadrao, PadraoDeCalibração
+from app.domains.tenants.model import Tenant
 from app.domains.users.model import User, UserRole
 
 logger = logging.getLogger(__name__)
@@ -88,56 +91,97 @@ def calcular_curva(
 
 # ── Campos derivados dos pontos ────────────────────────────────────────────────
 
+FORMULAS_PRESETS = {
+    "media": {
+        "label": "Média de leituras",
+        "hint": "Calcula a média aritmética das colunas selecionadas",
+    },
+    "erro": {
+        "label": "Erro (Leitura - Padrão)",
+        "hint": "Subtrai o valor de referência do valor medido",
+    },
+    "subtracao": {
+        "label": "Subtração Simples (A - B)",
+        "hint": "Diferença entre dois valores quaisquer",
+    },
+}
+
 
 def _derivar_campos(valores: dict, campos_definicao: list[dict]) -> dict:
     """Calcula campos derivados conforme definição do template.
 
-    Regras:
-    - calculado=False → campo de entrada, não derivado
-    - calculado="avg(c1,c2,...)" → média dos campos listados
-    - calculado="c1-c2" → subtração
-    - qualquer outra fórmula → loga aviso e retorna None
+    Suporta presets:
+    - { "calculado": "media", "origem": ["l1", "l2"] }
+    - { "calculado": "erro", "origem": ["leitura", "referencia"] }
+    - { "calculado": "subtracao", "origem": ["a", "b"] }
+    - Retrocompatibilidade: "avg(l1,l2)" e "a-b"
     """
     resultado = dict(valores)
+
+    # Garante que campos de entrada sejam floats se presentes
+    for k, v in resultado.items():
+        if v is not None and v != "":
+            try:
+                resultado[k] = float(v)
+            except (ValueError, TypeError):
+                pass
+
     for campo in campos_definicao:
         formula = campo.get("calculado")
         nome = campo.get("nome")
+        origem = campo.get("origem") or []
+
         if not formula or formula is False:
-            continue  # campo de entrada puro
+            continue
+
         try:
-            if isinstance(formula, str) and formula.startswith("avg("):
+            # 1. Novos Presets (Recomendado)
+            if formula == "media":
+                vals = [resultado.get(p) for p in origem]
+                if any(v is None for v in vals):
+                    resultado[nome] = None
+                else:
+                    resultado[nome] = sum(vals) / len(vals)
+
+            elif formula in ["erro", "subtracao"]:
+                if len(origem) >= 2:
+                    a = resultado.get(origem[0])
+                    b = resultado.get(origem[1])
+                    resultado[nome] = (
+                        (a - b) if (a is not None and b is not None) else None
+                    )
+                else:
+                    resultado[nome] = None
+
+            # 2. Retrocompatibilidade (Strings legadas)
+            elif isinstance(formula, str) and formula.startswith("avg("):
                 partes = formula[4:-1].split(",")
-                vals = [valores.get(p.strip()) for p in partes]
+                vals = [resultado.get(p.strip()) for p in partes]
                 if any(v is None for v in vals):
                     resultado[nome] = None
                 else:
                     resultado[nome] = sum(float(v) for v in vals) / len(vals)
+
             elif isinstance(formula, str) and "-" in formula:
                 partes = [p.strip() for p in formula.split("-", 1)]
-                a = valores.get(partes[0])
-                b = valores.get(partes[1])
+                a = resultado.get(partes[0])
+                b = resultado.get(partes[1])
                 resultado[nome] = (
                     (float(a) - float(b)) if (a is not None and b is not None) else None
                 )
             else:
-                logger.warning(
-                    "Fórmula desconhecida para campo '%s': %s", nome, formula
-                )
                 resultado[nome] = None
         except Exception as exc:
-            logger.warning(
-                "Erro ao calcular campo '%s' com fórmula '%s': %s",
-                nome,
-                formula,
-                exc,
-            )
+            logger.warning("Erro ao calcular campo '%s': %s", nome, exc)
             resultado[nome] = None
+
     return resultado
 
 
 class CertificadoPadraoService:
-    def __init__(self, repo: CertificadoPadraoRepository):
+    def __init__(self, repo: CertificadoPadraoRepository, storage: StorageService):
         self.repo = repo
+        self.storage = storage
 
     # ── FormularioMedicaoTemplate ──────────────────────────────────────────────
 
@@ -176,9 +220,22 @@ class CertificadoPadraoService:
         self, data: CertificadoCreate, current_user: User
     ) -> CertificadoCalibracaoPadrao:
         u_padrao = data.U_expandida / data.k_abrangencia
+
+        formulario_config = data.formulario_config
+        if not formulario_config and data.formulario_template_id:
+            tmpl = await self.repo.get_template_by_id(data.formulario_template_id)
+            if tmpl:
+                formulario_config = {
+                    "nome": tmpl.nome,
+                    "campos_pontos": tmpl.campos_pontos,
+                    "tipo_regressao_default": tmpl.tipo_regressao_default,
+                    "grau_polinomio_default": tmpl.grau_polinomio_default,
+                }
+
         cert = CertificadoCalibracaoPadrao(
-            **data.model_dump(),
+            **data.model_dump(exclude={"formulario_config"}),
             u_padrao=u_padrao,
+            formulario_config=formulario_config,
             criado_por=current_user.id,
         )
         return await self.repo.save(cert)
@@ -213,6 +270,37 @@ class CertificadoPadraoService:
     ) -> list[CertificadoCalibracaoPadrao]:
         return await self.repo.list_certificados_by_padrao(padrao_id)
 
+    async def upload_pdf(
+        self, certificado_id: int, file_content: bytes, filename: str
+    ) -> CertificadoCalibracaoPadrao:
+        """Faz upload do PDF para o storage e vincula ao certificado."""
+        cert = await self.get_certificado(certificado_id)
+
+        # Busca o padrão para pegar o tenant
+        padrao = await self.repo._session.get(PadraoDeCalibração, cert.padrao_id)
+        if not padrao:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Padrão não encontrado",
+            )
+
+        # Busca o tenant para usar o slug no path
+        tenant = await self.repo._session.get(Tenant, padrao.tenant_id)
+        tenant_slug = tenant.slug if tenant else "global"
+
+        # Define um nome único para o arquivo no bucket, isolado por tenant
+        # Ex: labs/normatiq/certificados/123/nome_arquivo.pdf
+        s3_key = f"labs/{tenant_slug}/certificados/{cert.id}/{filename}"
+
+        path = await self.storage.upload_file(
+            file_content=file_content,
+            filename=s3_key,
+            content_type="application/pdf",
+        )
+
+        cert.arquivo_pdf = path
+        return await self.repo.save(cert)
+
     # ── Pontos de medição ──────────────────────────────────────────────────────
 
     async def salvar_pontos(
@@ -224,13 +312,19 @@ class CertificadoPadraoService:
         cert = await self.get_certificado(certificado_id)
         await self.repo.delete_pontos_of_certificado(cert.id)
 
-        # Obtém definição de campos do template, se houver
+        # Obtém definição de campos do snapshot ou do template
         campos_def: list[dict] = []
-        if cert.formulario_template_id:
+        config = cert.formulario_config
+        if not config and cert.formulario_template_id:
             tmpl = await self.repo.get_template_by_id(cert.formulario_template_id)
             if tmpl:
-                raw = tmpl.campos_pontos
-                campos_def = raw if isinstance(raw, list) else raw.get("campos", [])
+                config = tmpl.campos_pontos
+
+        if config:
+            if isinstance(config, list):
+                campos_def = config
+            else:
+                campos_def = config.get("colunas") or config.get("campos") or []
 
         novos: list[PontoMedicaoCertificado] = []
         for p in pontos_data:
@@ -247,17 +341,22 @@ class CertificadoPadraoService:
 
     async def listar_pontos(self, certificado_id: int) -> list[PontoMedicaoCertificado]:
         """Lista pontos com campos calculados derivados do template."""
-        await self.get_certificado(certificado_id)  # garante existência
+        cert = await self.get_certificado(certificado_id)
         pontos = await self.repo.list_pontos(certificado_id)
 
-        # Obtém template do certificado para derivar campos
-        cert = await self.repo.get_certificado_by_id(certificado_id)
+        # Obtém definição de campos do snapshot ou do template
         campos_def: list[dict] = []
-        if cert and cert.formulario_template_id:
+        config = cert.formulario_config
+        if not config and cert.formulario_template_id:
             tmpl = await self.repo.get_template_by_id(cert.formulario_template_id)
             if tmpl:
-                raw = tmpl.campos_pontos
-                campos_def = raw if isinstance(raw, list) else raw.get("campos", [])
+                config = tmpl.campos_pontos
+
+        if config:
+            if isinstance(config, list):
+                campos_def = config
+            else:
+                campos_def = config.get("colunas") or config.get("campos") or []
 
         if campos_def:
             for ponto in pontos:
@@ -425,15 +524,42 @@ class CertificadoPadraoService:
 
     # ── UsoDePadrao ────────────────────────────────────────────────────────────
 
+    async def deletar_certificado(self, certificado_id: int) -> None:
+        cert = await self.get_certificado(certificado_id)
+        await self.repo.delete(cert)
+
     async def registrar_uso(self, data: UsoPadraoCreate) -> UsoDePadrao:
         uso = UsoDePadrao(**data.model_dump())
         return await self.repo.save(uso)
 
+    @staticmethod
+    def aplicar_correcao(curva: CurvaCorrecao, valor: float) -> float:
+        """Aplica a correção da curva a um valor medido.
+
+        f(x) = a0 + a1*x + a2*x^2 + ...
+        Onde x é o valor medido e f(x) é o erro (correção).
+        """
+        # coeficientes estão em ordem crescente de grau: [a0, a1, a2...]
+        return sum(c * (valor**i) for i, c in enumerate(curva.coeficientes))
+
+    @staticmethod
+    def calcular_k_student(graus_liberdade: float, confianca: float = 0.95) -> float:
+        """Calcula o fator de abrangência k usando a distribuição t de Student.
+
+        Usado na fórmula de Welch-Satterthwaite para expansão da incerteza.
+        """
+        if graus_liberdade <= 0:
+            return 2.0  # fallback seguro para infinito
+        # stats.t.ppf retorna o percentil para uma cauda. Para 95% bicaudal, usamos 0.975
+        alpha = (1 + confianca) / 2
+        return float(stats.t.ppf(alpha, graus_liberdade))
+
 
 def get_certificado_padrao_service(
     repo: CertificadoPadraoRepositoryDep,
+    storage: StorageServiceDep,
 ) -> "CertificadoPadraoService":
-    return CertificadoPadraoService(repo)
+    return CertificadoPadraoService(repo, storage)
 
 
 CertificadoPadraoServiceDep = Annotated[

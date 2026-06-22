@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, File, UploadFile, status
 
 from app.auth.dependencies import CurrentUser
 from app.domains.certificados_padrao.schema import (
@@ -70,7 +70,53 @@ async def atualizar_template(
     return await service.atualizar_template(id, data)
 
 
-# ── Certificados ───────────────────────────────────────────────────────────────
+# ── Fórmulas e Cálculos ───────────────────────────────────────────────────────
+
+
+@router.get("/formulas/presets")
+async def listar_formulas_presets(
+    current_user: CurrentUser,
+):
+    """Lista os presets de cálculo disponíveis para os templates."""
+    from app.domains.certificados_padrao.service import FORMULAS_PRESETS
+
+    return FORMULAS_PRESETS
+
+
+@router.post("/certificados/{id}/calcular-pontos")
+async def calcular_pontos_live(
+    id: int,
+    pontos: list[dict],
+    current_user: CurrentUser,
+    service: CertificadoPadraoServiceDep,
+):
+    """Calcula campos derivados de uma lista de pontos em tempo real."""
+    cert = await service.get_certificado(id)
+
+    # Obtém definição de campos do snapshot ou do template
+    campos_def: list[dict] = []
+    config = cert.formulario_config
+    if not config and cert.formulario_template_id:
+        tmpl = await service.repo.get_template_by_id(cert.formulario_template_id)
+        if tmpl:
+            config = tmpl.campos_pontos
+
+    if config:
+        if isinstance(config, list):
+            campos_def = config
+        else:
+            campos_def = config.get("colunas") or config.get("campos") or []
+
+    from app.domains.certificados_padrao.service import _derivar_campos
+
+    resultado = []
+    for p in pontos:
+        resultado.append(_derivar_campos(p, campos_def))
+
+    return resultado
+
+
+# ── Certificados (CRUD) ───────────────────────────────────────────────────────
 
 
 @router.post(
@@ -109,6 +155,18 @@ async def atualizar_certificado(
 ):
     """Atualiza dados de um certificado de calibração."""
     return await service.atualizar_certificado(id, data)
+
+
+@router.post("/certificados/{id}/upload-pdf", response_model=CertificadoPublic)
+async def upload_pdf(
+    id: int,
+    current_user: CurrentUser,
+    service: CertificadoPadraoServiceDep,
+    file: UploadFile = File(...),
+):
+    """Faz upload do PDF do certificado."""
+    content = await file.read()
+    return await service.upload_pdf(id, content, file.filename)
 
 
 @router.get(
@@ -199,3 +257,13 @@ async def get_curva_ativa(
 ):
     """Retorna a curva de correção aprovada mais recente do certificado."""
     return await service.get_curva_ativa(id)
+
+
+@router.delete("/certificados/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def deletar_certificado(
+    id: int,
+    current_user: CurrentUser,
+    service: CertificadoPadraoServiceDep,
+):
+    """Exclui um certificado e todos os seus pontos e curvas (cascade)."""
+    await service.deletar_certificado(id)

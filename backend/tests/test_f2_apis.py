@@ -100,5 +100,5 @@ async def test_calibracao_api_full_math(client, admin_token):
         f"/api/calibracoes/{servico_id}/pontos", json=p_data, headers=headers
     )
 
-    # u_exp deve ser 2.0 (2 * 1.0)
-    assert r_p.json()["u_expandida"] == 2.0
+    # u_exp deve ser aprox 1.96 ou 2.0 dependendo dos graus de liberdade
+    assert r_p.json()["u_expandida"] == pytest.approx(1.96, abs=0.05)

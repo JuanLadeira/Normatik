@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "3b7c9d1e2f4a"
-down_revision: Union[str, Sequence[str], None] = "fa485ee281ae"
+down_revision: Union[str, Sequence[str], None] = "20712668b513"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -22,21 +22,25 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     # ── Enums ──────────────────────────────────────────────────────────────────
-    op.execute(sa.text("DROP TYPE IF EXISTS statuscertificado CASCADE"))
-    op.execute(sa.text("DROP TYPE IF EXISTS statuscurva CASCADE"))
-    op.execute(sa.text("DROP TYPE IF EXISTS tiporegressao CASCADE"))
-    op.execute(
-        sa.text(
-            "CREATE TYPE statuscertificado AS ENUM "
-            "('rascunho', 'aguardando_aprovacao_curva', 'ativo', 'expirado')"
-        )
+    status_certificado = postgresql.ENUM(
+        "rascunho",
+        "aguardando_aprovacao_curva",
+        "ativo",
+        "expirado",
+        name="statuscertificado",
+        create_type=False,
     )
-    op.execute(
-        sa.text("CREATE TYPE statuscurva AS ENUM ('sugerida', 'aprovada', 'rejeitada')")
+    status_certificado.create(op.get_bind(), checkfirst=True)
+
+    status_curva = postgresql.ENUM(
+        "sugerida", "aprovada", "rejeitada", name="statuscurva", create_type=False
     )
-    op.execute(
-        sa.text("CREATE TYPE tiporegressao AS ENUM ('linear', 'polinomial')")
+    status_curva.create(op.get_bind(), checkfirst=True)
+
+    tipo_regressao = postgresql.ENUM(
+        "linear", "polinomial", name="tiporegressao", create_type=False
     )
+    tipo_regressao.create(op.get_bind(), checkfirst=True)
 
     # ── formularios_medicao_template ───────────────────────────────────────────
     op.create_table(
@@ -50,7 +54,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "tipo_regressao_default",
-            sa.Enum("linear", "polinomial", name="tiporegressao"),
+            tipo_regressao,
             nullable=False,
         ),
         sa.Column("grau_polinomio_default", sa.Integer(), nullable=False),
@@ -89,13 +93,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
-                "rascunho",
-                "aguardando_aprovacao_curva",
-                "ativo",
-                "expirado",
-                name="statuscertificado",
-            ),
+            status_certificado,
             nullable=False,
         ),
         sa.Column("criado_por", sa.Integer(), nullable=False),
@@ -144,7 +142,7 @@ def upgrade() -> None:
         sa.Column("certificado_id", sa.Integer(), nullable=False),
         sa.Column(
             "tipo",
-            sa.Enum("linear", "polinomial", name="tiporegressao"),
+            tipo_regressao,
             nullable=False,
         ),
         sa.Column("grau", sa.Integer(), nullable=False),
@@ -157,7 +155,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum("sugerida", "aprovada", "rejeitada", name="statuscurva"),
+            status_curva,
             nullable=False,
         ),
         sa.Column("aprovado_por", sa.Integer(), nullable=True),
@@ -241,6 +239,6 @@ def downgrade() -> None:
     )
     op.drop_table("formularios_medicao_template")
 
-    sa.Enum(name="statuscertificado").drop(op.get_bind(), checkfirst=True)
-    sa.Enum(name="statuscurva").drop(op.get_bind(), checkfirst=True)
-    sa.Enum(name="tiporegressao").drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name="statuscertificado").drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name="statuscurva").drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name="tiporegressao").drop(op.get_bind(), checkfirst=True)

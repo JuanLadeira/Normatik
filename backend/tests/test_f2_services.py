@@ -186,5 +186,5 @@ async def test_calibracao_service_recalculo_automatico(db_session, admin_user):
 
     await db_session.refresh(ponto)
     # u_c = sqrt(0^2 + 0.5^2) = 0.5
-    # u_exp = 2 * 0.5 = 1.0
-    assert ponto.u_expandida == pytest.approx(1.0)
+    # Com veff=100, k é aprox 1.984 -> u_exp = 0.5 * 1.984 = 0.992
+    assert ponto.u_expandida == pytest.approx(0.992, abs=1e-3)

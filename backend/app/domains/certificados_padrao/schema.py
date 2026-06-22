@@ -18,6 +18,7 @@ class FormularioTemplateCreate(BaseModel):
     campos_pontos: dict | list
     tipo_regressao_default: TipoRegressao = TipoRegressao.linear
     grau_polinomio_default: int = 1
+    quantidade_pontos_default: int | None = None
 
 
 class FormularioTemplateUpdate(BaseModel):
@@ -25,6 +26,7 @@ class FormularioTemplateUpdate(BaseModel):
     campos_pontos: dict | list | None = None
     tipo_regressao_default: TipoRegressao | None = None
     grau_polinomio_default: int | None = None
+    quantidade_pontos_default: int | None = None
 
 
 class FormularioTemplatePublic(BaseModel):
@@ -36,6 +38,7 @@ class FormularioTemplatePublic(BaseModel):
     campos_pontos: dict | list
     tipo_regressao_default: TipoRegressao
     grau_polinomio_default: int
+    quantidade_pontos_default: int | None
     criado_por: int
     created_at: datetime
     updated_at: datetime

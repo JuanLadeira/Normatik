@@ -48,6 +48,9 @@ class FormularioMedicaoTemplate(Base):
     grau_polinomio_default: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1
     )
+    quantidade_pontos_default: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
     criado_por: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     tipo_instrumento: Mapped["TipoEquipamento"] = relationship(lazy="selectin")  # noqa: F821

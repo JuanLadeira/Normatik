@@ -1,6 +1,9 @@
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, HTTPException, status
+
+if TYPE_CHECKING:
+    from app.domains.certificados_padrao.model import CurvaCorrecao
 
 from app.domains.calibracoes.model import (
     IncertezaBFonte,
@@ -57,8 +60,11 @@ class CalibracaoService:
         servico = await self.get_by_id(tenant_id, servico_id)
         ponto = PontoDeCalibração(servico_id=servico.id, **data.model_dump())
 
+        # Busca curva ativa do padrão vinculado se houver
+        curva_padrao = await self._get_curva_padrao_ativa(servico)
+
         # Calcula resultados iniciais
-        ponto.calcular_incertezas(servico.fontes_incerteza_b)
+        ponto.calcular_incertezas(servico.fontes_incerteza_b, curva_padrao)
 
         return await self.repo.save(ponto)
 
@@ -81,8 +87,42 @@ class CalibracaoService:
         for key, value in data.model_dump().items():
             setattr(ponto, key, value)
 
-        ponto.calcular_incertezas(servico.fontes_incerteza_b)
+        # Busca curva ativa do padrão vinculado se houver
+        curva_padrao = await self._get_curva_padrao_ativa(servico)
+
+        ponto.calcular_incertezas(servico.fontes_incerteza_b, curva_padrao)
         return await self.repo.save(ponto)
+
+    async def _get_curva_padrao_ativa(
+        self, servico: ServicoDeCalibração
+    ) -> "CurvaCorrecao | None":
+        """Busca se há uma fonte de incerteza que seja um padrão com curva aprovada."""
+        from sqlalchemy import select
+
+        from app.domains.certificados_padrao.model import (
+            CertificadoCalibracaoPadrao,
+            CurvaCorrecao,
+            StatusCertificado,
+            StatusCurva,
+        )
+
+        for fonte in servico.fontes_incerteza_b:
+            if fonte.padrao_id:
+                stmt = (
+                    select(CurvaCorrecao)
+                    .join(CertificadoCalibracaoPadrao)
+                    .where(
+                        CertificadoCalibracaoPadrao.padrao_id == fonte.padrao_id,
+                        CertificadoCalibracaoPadrao.status == StatusCertificado.ativo,
+                        CurvaCorrecao.status == StatusCurva.aprovada,
+                    )
+                    .order_by(CurvaCorrecao.data_aprovacao.desc())
+                )
+                res = await self.repo._session.execute(stmt)
+                curva = res.scalar_one_or_none()
+                if curva:
+                    return curva
+        return None
 
     async def delete_ponto(
         self, tenant_id: int, servico_id: int, ponto_id: int
@@ -128,7 +168,6 @@ class CalibracaoService:
 
     async def _recalcular_todos_pontos(self, servico: ServicoDeCalibração) -> None:
         # Força o carregamento dos pontos se não estiverem presentes
-        # (Em alguns cenários de cache do SQLAlchemy, a relação pode estar vazia se carregada antes do flush)
         if not servico.pontos:
             from sqlalchemy import select
 
@@ -141,8 +180,11 @@ class CalibracaoService:
         else:
             pontos = servico.pontos
 
+        # Busca se há uma fonte de incerteza que seja um padrão com curva aprovada
+        curva_padrao = await self._get_curva_padrao_ativa(servico)
+
         for ponto in pontos:
-            ponto.calcular_incertezas(servico.fontes_incerteza_b)
+            ponto.calcular_incertezas(servico.fontes_incerteza_b, curva_padrao)
             await self.repo.save(ponto)
 
 

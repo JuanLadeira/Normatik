@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:normatiq_ui/normatiq_ui.dart';
-import '../api/client.dart';
 
 /// Widget de tabela de pontos de medição — Consome o backend para cálculos.
 class PontosMedicaoWidget extends ConsumerStatefulWidget {
@@ -26,79 +24,95 @@ class PontosMedicaoWidget extends ConsumerStatefulWidget {
 class _PontosMedicaoWidgetState extends ConsumerState<PontosMedicaoWidget> {
   late List<Map<String, dynamic>> _pontos;
   late List<dynamic> _colunas;
-  bool _calculating = false;
-  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    _colunas = widget.config['colunas'] ?? [];
+    // Aceita o formato novo ('colunas') e o legado ('campos').
+    _colunas = (widget.config['colunas'] ?? widget.config['campos'] ?? []) as List;
     _pontos = widget.pontosIniciais
         .map((p) => Map<String, dynamic>.from(p))
         .toList();
     if (_pontos.isEmpty) {
-      _addLinha();
+      _pontos.add(_novaLinha());
+    }
+    // Garante que colunas calculadas já apareçam preenchidas ao abrir.
+    for (final row in _pontos) {
+      _recalcLinha(row);
     }
   }
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
+  Map<String, dynamic> _novaLinha() {
+    final linha = <String, dynamic>{};
+    for (var col in _colunas) {
+      linha[col['nome']] = null;
+    }
+    return linha;
   }
 
   void _addLinha() {
-    setState(() {
-      final novaLinha = <String, dynamic>{};
-      for (var col in _colunas) {
-        novaLinha[col['nome']] = null;
-      }
-      _pontos.add(novaLinha);
-    });
+    setState(() => _pontos.add(_novaLinha()));
   }
 
   void _removeLinha(int index) {
-    setState(() {
-      _pontos.removeAt(index);
-    });
+    setState(() => _pontos.removeAt(index));
   }
 
   void _updateValor(int rowIndex, String colNome, String value) {
     setState(() {
       _pontos[rowIndex][colNome] = double.tryParse(value);
+      _recalcLinha(_pontos[rowIndex]);
     });
-    
-    // Se temos o ID do certificado, podemos disparar o cálculo real no backend
-    if (widget.certificadoId != null) {
-      _triggerLiveCalculation();
-    }
   }
 
-  void _triggerLiveCalculation() {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 1000), () => _doCalculate());
-  }
-
-  Future<void> _doCalculate() async {
-    if (widget.certificadoId == null || !mounted) return;
-    setState(() => _calculating = true);
-
-    try {
-      final client = ref.read(apiClientProvider);
-      final r = await client.dio.post(
-        '/api/certificados-padrao/certificados/${widget.certificadoId}/calcular-pontos',
-        data: _pontos,
-      );
-
-      if (mounted) {
-        setState(() {
-          _pontos = (r.data as List).map((e) => Map<String, dynamic>.from(e)).toList();
-          _calculating = false;
-        });
+  /// Recalcula as colunas derivadas de uma linha localmente, replicando o
+  /// `_derivar_campos` do backend. Suporta o formato novo (calculado ∈
+  /// {media, erro, subtracao} + origem) e o legado (fórmulas avg(...) e a-b).
+  /// Duas passadas para resolver cálculos que dependem de outra coluna
+  /// calculada (ex: erro = media - nominal).
+  void _recalcLinha(Map<String, dynamic> row) {
+    for (var pass = 0; pass < 2; pass++) {
+      for (final col in _colunas) {
+        final calc = col['calculado'];
+        if (calc == false || calc == null) continue;
+        row[col['nome']] = _calcularCampo(calc, col['origem'], row);
       }
-    } catch (e) {
-      if (mounted) setState(() => _calculating = false);
     }
+  }
+
+  double? _calcularCampo(dynamic calc, dynamic origemRaw, Map<String, dynamic> row) {
+    double? num2(dynamic v) => (v is num) ? v.toDouble() : null;
+    final origem = (origemRaw is List) ? origemRaw : const [];
+
+    if (calc == 'media') {
+      final vals = origem.map((o) => num2(row[o])).whereType<double>().toList();
+      if (vals.isEmpty) return null;
+      return vals.reduce((a, b) => a + b) / vals.length;
+    }
+    if (calc == 'erro' || calc == 'subtracao') {
+      if (origem.length < 2) return null;
+      final a = num2(row[origem[0]]);
+      final b = num2(row[origem[1]]);
+      return (a != null && b != null) ? a - b : null;
+    }
+    // Formato legado: fórmula em string.
+    if (calc is String) {
+      final s = calc.replaceAll(' ', '');
+      final avg = RegExp(r'^avg\((.*)\)$').firstMatch(s);
+      if (avg != null) {
+        final args = avg.group(1)!.split(',').where((e) => e.isNotEmpty);
+        final vals = args.map((o) => num2(row[o])).whereType<double>().toList();
+        if (vals.isEmpty) return null;
+        return vals.reduce((a, b) => a + b) / vals.length;
+      }
+      final parts = s.split('-');
+      if (parts.length == 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+        final a = num2(row[parts[0]]);
+        final b = num2(row[parts[1]]);
+        return (a != null && b != null) ? a - b : null;
+      }
+    }
+    return null;
   }
 
   @override
@@ -106,11 +120,6 @@ class _PontosMedicaoWidgetState extends ConsumerState<PontosMedicaoWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_calculating)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: LinearProgressIndicator(minHeight: 2),
-          ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
@@ -184,7 +193,7 @@ class _PontosMedicaoWidgetState extends ConsumerState<PontosMedicaoWidget> {
         ),
         const SizedBox(height: NormatiqSpacing.s6),
         FilledButton(
-          onPressed: _calculating ? null : () => widget.onSaved(_pontos),
+          onPressed: () => widget.onSaved(_pontos),
           child: const Text('SALVAR PONTOS'),
         ),
       ],
